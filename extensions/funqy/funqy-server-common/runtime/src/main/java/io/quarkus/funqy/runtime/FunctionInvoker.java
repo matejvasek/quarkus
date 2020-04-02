@@ -1,11 +1,10 @@
 package io.quarkus.funqy.runtime;
 
 import java.lang.annotation.Annotation;
-import java.lang.reflect.InvocationTargetException;
-import java.lang.reflect.Method;
-import java.lang.reflect.Type;
+import java.lang.reflect.*;
 import java.util.ArrayList;
 import java.util.Map;
+import java.util.concurrent.CompletionStage;
 import java.util.concurrent.ConcurrentHashMap;
 
 public class FunctionInvoker {
@@ -16,6 +15,8 @@ public class FunctionInvoker {
     protected ArrayList<ValueInjector> parameterInjectors;
     protected Class inputType;
     protected Class outputType;
+    protected boolean isAsync;
+
     protected Map<String, Object> bindingContext = new ConcurrentHashMap<>();
 
     public FunctionInvoker(String name, Class targetClass, Method method) {
@@ -36,8 +37,19 @@ public class FunctionInvoker {
             }
         }
         constructor = new FunctionConstructor(targetClass);
-        if (method.getReturnType() != null) {
-            outputType = method.getReturnType();
+        Class rt = method.getReturnType();
+        if (rt != null) {
+            if (CompletionStage.class.isAssignableFrom(rt)) {
+                try {
+                    Type type = ((ParameterizedType) method.getGenericReturnType()).getActualTypeArguments()[0];
+                    outputType = (Class) type;
+                } catch (Exception ex) {
+                    outputType = Object.class;
+                }
+                isAsync = true;
+            } else {
+                outputType = rt;
+            }
         }
     }
 
@@ -61,6 +73,14 @@ public class FunctionInvoker {
 
     public Class getOutputType() {
         return outputType;
+    }
+
+    public boolean isAsync() {
+        return isAsync;
+    }
+
+    public void setAsync(boolean async) {
+        isAsync = async;
     }
 
     public boolean hasOutput() {

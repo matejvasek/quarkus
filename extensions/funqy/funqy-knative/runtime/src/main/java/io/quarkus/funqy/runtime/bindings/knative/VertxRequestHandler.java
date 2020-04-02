@@ -3,8 +3,11 @@ package io.quarkus.funqy.runtime.bindings.knative;
 import java.io.InputStream;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Optional;
 import java.util.UUID;
+import java.util.concurrent.CompletionStage;
 import java.util.concurrent.Executor;
+import java.util.function.Consumer;
 
 import javax.enterprise.inject.Instance;
 import javax.enterprise.inject.spi.CDI;
@@ -122,7 +125,25 @@ public class VertxRequestHandler implements Handler<RoutingContext> {
                             ObjectWriter writer = (ObjectWriter) invoker.getBindingContext().get(ObjectWriter.class.getName());
                             routingContext.response().putHeader("Content-Type", "application/json");
                             try {
-                                routingContext.response().end(writer.writeValueAsString(response.getOutput()));
+                                Object funqData = response.getOutput();
+                                if (invoker.isAsync()) {
+                                    ((CompletionStage<?>) funqData)
+                                            .thenAcceptAsync((obj) -> {
+                                                if (obj == null)
+                                                    return;
+                                                try {
+                                                    routingContext.response().end(writer.writeValueAsString(obj));
+                                                } catch (Throwable e) {
+                                                    routingContext.fail(e);
+                                                }
+                                            }, executor)
+                                            .exceptionally(t -> {
+                                                routingContext.fail(t);
+                                                return null;
+                                            });
+                                } else {
+                                    routingContext.response().end(writer.writeValueAsString(funqData));
+                                }
                             } catch (JsonProcessingException e) {
                                 log.error("Failed to unmarshal input", e);
                                 routingContext.fail(400);
@@ -181,37 +202,52 @@ public class VertxRequestHandler implements Handler<RoutingContext> {
                             return;
                         }
                     }
-
                 }
                 Object finalInput = input;
                 executor.execute(() -> {
                     try {
-                        FunqyServerResponse response = dispatch(routingContext, invoker, finalInput);
-                        Map<String, Object> responseEvent = new HashMap<>();
+                        final FunqyServerResponse response = dispatch(routingContext, invoker, finalInput);
+                        final Map<String, Object> responseEvent = new HashMap<>();
+
                         responseEvent.put("id", getResponseId());
                         responseEvent.put("specversion", "1.0");
                         responseEvent.put("source", getResponseSource());
                         responseEvent.put("type", getResponseType());
                         routingContext.response().setStatusCode(200);
+
+                        final Consumer<Optional<Object>> doResponse = (data) -> {
+                            ObjectWriter writer = (ObjectWriter) invoker.getBindingContext().get(ObjectWriter.class.getName());
+                            data.ifPresent(val -> {
+                                responseEvent.put("data", val);
+                            });
+                            try {
+                                routingContext.response().end(mapper.writer().writeValueAsString(responseEvent));
+                            } catch (JsonProcessingException e) {
+                                log.error("Failed to marshal", e);
+                                routingContext.fail(400);
+                                return;
+                            }
+                        };
+
+                        Object funqData = response.getOutput();
                         if (invoker.hasOutput()) {
                             responseEvent.put("datacontenttype", "application/json");
-                            responseEvent.put("data", response.getOutput());
-                            ObjectWriter writer = (ObjectWriter) invoker.getBindingContext().get(ObjectWriter.class.getName());
-                            try {
-                                routingContext.response().end(mapper.writer().writeValueAsString(responseEvent));
-                            } catch (JsonProcessingException e) {
-                                log.error("Failed to marshal", e);
-                                routingContext.fail(400);
-                                return;
+                            if (invoker.isAsync()) {
+                                ((CompletionStage<?>) funqData)
+                                        .thenAcceptAsync((obj) -> {
+                                            if (obj == null)
+                                                return;
+                                            doResponse.accept(Optional.ofNullable(obj));
+                                        }, executor)
+                                        .exceptionally(t -> {
+                                            routingContext.fail(t);
+                                            return null;
+                                        });
+                            } else {
+                                doResponse.accept(Optional.ofNullable(funqData));
                             }
                         } else {
-                            try {
-                                routingContext.response().end(mapper.writer().writeValueAsString(responseEvent));
-                            } catch (JsonProcessingException e) {
-                                log.error("Failed to marshal", e);
-                                routingContext.fail(400);
-                                return;
-                            }
+                            doResponse.accept(Optional.empty());
                         }
                     } catch (Throwable t) {
                         log.error(t);
