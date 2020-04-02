@@ -84,7 +84,7 @@ public class FunctionInvoker {
     }
 
     public boolean hasOutput() {
-        return outputType != null;
+        return outputType != null && !outputType.equals(Void.TYPE);
     }
 
     public String getName() {
