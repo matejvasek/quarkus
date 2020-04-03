@@ -128,19 +128,17 @@ public class VertxRequestHandler implements Handler<RoutingContext> {
                                 Object funqData = response.getOutput();
                                 if (invoker.isAsync()) {
                                     ((CompletionStage<?>) funqData)
-                                            .thenAcceptAsync((obj) -> {
-                                                if (obj == null)
+                                            .whenCompleteAsync((obj, t) -> {
+                                                if (t != null) {
+                                                    routingContext.fail(t);
                                                     return;
+                                                }
                                                 try {
                                                     routingContext.response().end(writer.writeValueAsString(obj));
                                                 } catch (Throwable e) {
                                                     routingContext.fail(e);
                                                 }
-                                            }, executor)
-                                            .exceptionally(t -> {
-                                                routingContext.fail(t);
-                                                return null;
-                                            });
+                                            }, executor);
                                 } else {
                                     routingContext.response().end(writer.writeValueAsString(funqData));
                                 }
@@ -234,14 +232,11 @@ public class VertxRequestHandler implements Handler<RoutingContext> {
                             responseEvent.put("datacontenttype", "application/json");
                             if (invoker.isAsync()) {
                                 ((CompletionStage<?>) funqData)
-                                        .thenAcceptAsync((obj) -> {
-                                            if (obj == null)
-                                                return;
-                                            doResponse.accept(Optional.ofNullable(obj));
-                                        }, executor)
-                                        .exceptionally(t -> {
-                                            routingContext.fail(t);
-                                            return null;
+                                        .whenCompleteAsync((obj, t) -> {
+                                            if (t != null)
+                                                routingContext.fail(t);
+                                            else
+                                                doResponse.accept(Optional.ofNullable(obj));
                                         });
                             } else {
                                 doResponse.accept(Optional.ofNullable(funqData));
