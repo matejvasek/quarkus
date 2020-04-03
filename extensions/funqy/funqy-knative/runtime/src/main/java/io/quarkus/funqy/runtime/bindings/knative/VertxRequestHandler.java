@@ -32,6 +32,7 @@ import io.quarkus.vertx.http.runtime.security.QuarkusHttpUser;
 import io.vertx.core.Handler;
 import io.vertx.core.Vertx;
 import io.vertx.core.http.HttpMethod;
+import io.vertx.core.http.HttpServerResponse;
 import io.vertx.ext.web.RoutingContext;
 
 public class VertxRequestHandler implements Handler<RoutingContext> {
@@ -118,12 +119,13 @@ public class VertxRequestHandler implements Handler<RoutingContext> {
                 Object finalInput = input;
                 executor.execute(() -> {
                     try {
+                        final HttpServerResponse httpResponse = routingContext.response();
                         FunqyServerResponse response = dispatch(routingContext, invoker, finalInput);
                         if (invoker.hasOutput()) {
-                            routingContext.response().setStatusCode(200);
+                            httpResponse.setStatusCode(200);
                             handler.handle();
                             ObjectWriter writer = (ObjectWriter) invoker.getBindingContext().get(ObjectWriter.class.getName());
-                            routingContext.response().putHeader("Content-Type", "application/json");
+                            httpResponse.putHeader("Content-Type", "application/json");
                             try {
                                 Object funqData = response.getOutput();
                                 if (invoker.isAsync()) {
@@ -134,13 +136,13 @@ public class VertxRequestHandler implements Handler<RoutingContext> {
                                                     return;
                                                 }
                                                 try {
-                                                    routingContext.response().end(writer.writeValueAsString(obj));
+                                                    httpResponse.end(writer.writeValueAsString(obj));
                                                 } catch (Throwable e) {
                                                     routingContext.fail(e);
                                                 }
                                             }, executor);
                                 } else {
-                                    routingContext.response().end(writer.writeValueAsString(funqData));
+                                    httpResponse.end(writer.writeValueAsString(funqData));
                                 }
                             } catch (JsonProcessingException e) {
                                 log.error("Failed to unmarshal input", e);
@@ -148,9 +150,9 @@ public class VertxRequestHandler implements Handler<RoutingContext> {
                                 return;
                             }
                         } else {
-                            routingContext.response().setStatusCode(204);
+                            httpResponse.setStatusCode(204);
                             handler.handle();
-                            routingContext.response().end();
+                            httpResponse.end();
                         }
                     } catch (Throwable t) {
                         log.error(t);
@@ -204,6 +206,7 @@ public class VertxRequestHandler implements Handler<RoutingContext> {
                 Object finalInput = input;
                 executor.execute(() -> {
                     try {
+                        final HttpServerResponse httpResponse = routingContext.response();
                         final FunqyServerResponse response = dispatch(routingContext, invoker, finalInput);
                         final Map<String, Object> responseEvent = new HashMap<>();
 
@@ -211,7 +214,7 @@ public class VertxRequestHandler implements Handler<RoutingContext> {
                         responseEvent.put("specversion", "1.0");
                         responseEvent.put("source", getResponseSource());
                         responseEvent.put("type", getResponseType());
-                        routingContext.response().setStatusCode(200);
+                        httpResponse.setStatusCode(200);
 
                         final Consumer<Optional<Object>> doResponse = (data) -> {
                             ObjectWriter writer = (ObjectWriter) invoker.getBindingContext().get(ObjectWriter.class.getName());
@@ -219,11 +222,10 @@ public class VertxRequestHandler implements Handler<RoutingContext> {
                                 responseEvent.put("data", val);
                             });
                             try {
-                                routingContext.response().end(mapper.writer().writeValueAsString(responseEvent));
+                                httpResponse.end(mapper.writer().writeValueAsString(responseEvent));
                             } catch (JsonProcessingException e) {
                                 log.error("Failed to marshal", e);
                                 routingContext.fail(400);
-                                return;
                             }
                         };
 
