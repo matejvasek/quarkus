@@ -31,6 +31,14 @@ public class GreetTest {
     }
 
     @Test
+    public void testVanillaNPE() {
+        RestAssured.given().contentType("application/json")
+                .body("null")
+                .post("/")
+                .then().statusCode(500);
+    }
+
+    @Test
     public void testBinary() {
         RestAssured.given().contentType("application/json")
                 .body("{\"name\": \"Bill\"}")
@@ -44,6 +52,16 @@ public class GreetTest {
                 .header("ce-type", equalTo("greet"))
                 .body("name", equalTo("Bill"))
                 .body("message", equalTo("Hello Bill!"));
+    }
+
+    @Test
+    public void testBinaryNPE() {
+        RestAssured.given().contentType("application/json")
+                .body("null")
+                .header("ce-id", "1234")
+                .header("ce-specversion", "1.0")
+                .post("/")
+                .then().statusCode(500);
     }
 
     static final String event = "{ \"id\" : \"1234\", " +
@@ -68,6 +86,22 @@ public class GreetTest {
                 .body("datacontenttype", equalTo("application/json"))
                 .body("data.name", equalTo("Bill"))
                 .body("data.message", equalTo("Hello Bill!"));
+    }
+
+    static final String eventWithNullData = "{ \"id\" : \"1234\", " +
+            "  \"specversion\": \"1.0\", " +
+            "  \"source\": \"/foo\", " +
+            "  \"type\": \"sometype\", " +
+            "  \"datacontenttype\": \"application/json\", " +
+            "  \"data\": null " +
+            "}";
+
+    @Test
+    public void testStructuredNPE() {
+        RestAssured.given().contentType("application/cloudevents+json")
+                .body(eventWithNullData)
+                .post("/")
+                .then().statusCode(500);
     }
 
 }

@@ -1,5 +1,8 @@
 package io.quarkus.funqy.test;
 
+import java.time.Duration;
+import java.util.Timer;
+import java.util.TimerTask;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
 
@@ -12,12 +15,25 @@ public class GreetingFunctions {
     GreetingService service;
 
     @Funq
-    public CompletionStage greet(Identity name) {
-        String message = service.hello(name.getName());
-        Greeting greeting = new Greeting();
-        greeting.setMessage(message);
-        greeting.setName(name.getName());
-        return CompletableFuture.completedFuture(greeting);
+    public CompletionStage<Greeting> greet(Identity name) {
+        CompletableFuture<Greeting> result = new CompletableFuture<>();
+        if (name == null) {
+            result.completeExceptionally(new IllegalArgumentException("Identity cannot be null."));
+            return result;
+        }
+
+        new Timer().schedule(new TimerTask() {
+            @Override
+            public void run() {
+                String message = service.hello(name.getName());
+                Greeting greeting = new Greeting();
+                greeting.setMessage(message);
+                greeting.setName(name.getName());
+                result.complete(greeting);
+            }
+        }, Duration.ofMillis(1).toMillis());
+
+        return result;
     }
 
 }
