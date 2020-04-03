@@ -1,8 +1,8 @@
 package io.quarkus.funqy.runtime.bindings.http;
 
-import io.quarkus.funqy.runtime.FunqyServerResponse;
-
 import java.util.concurrent.CompletionStage;
+
+import io.quarkus.funqy.runtime.FunqyServerResponse;
 
 public class FunqyResponseImpl implements FunqyServerResponse {
     protected CompletionStage<?> output;
