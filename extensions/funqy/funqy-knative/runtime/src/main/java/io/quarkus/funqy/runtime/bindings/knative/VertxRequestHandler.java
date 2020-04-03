@@ -121,37 +121,29 @@ public class VertxRequestHandler implements Handler<RoutingContext> {
                     try {
                         final HttpServerResponse httpResponse = routingContext.response();
                         FunqyServerResponse response = dispatch(routingContext, invoker, finalInput);
+                        handler.handle();
                         if (invoker.hasOutput()) {
                             httpResponse.setStatusCode(200);
-                            handler.handle();
                             ObjectWriter writer = (ObjectWriter) invoker.getBindingContext().get(ObjectWriter.class.getName());
                             httpResponse.putHeader("Content-Type", "application/json");
-                            try {
-                                Object funqData = response.getOutput();
-                                if (invoker.isAsync()) {
-                                    ((CompletionStage<?>) funqData)
-                                            .whenCompleteAsync((obj, t) -> {
-                                                if (t != null) {
-                                                    routingContext.fail(t);
-                                                    return;
-                                                }
-                                                try {
-                                                    httpResponse.end(writer.writeValueAsString(obj));
-                                                } catch (Throwable e) {
-                                                    routingContext.fail(e);
-                                                }
-                                            }, executor);
-                                } else {
-                                    httpResponse.end(writer.writeValueAsString(funqData));
+
+                            CompletionStage<?> output = response.getOutput();
+                            output.whenCompleteAsync((obj, t) -> {
+                                if (t != null) {
+                                    routingContext.fail(t);
+                                    return;
                                 }
-                            } catch (JsonProcessingException e) {
-                                log.error("Failed to unmarshal input", e);
-                                routingContext.fail(400);
-                                return;
-                            }
+                                try {
+                                    httpResponse.end(writer.writeValueAsString(obj));
+                                } catch (JsonProcessingException jpe) {
+                                    log.error("Failed to unmarshal input", jpe);
+                                    routingContext.fail(400);
+                                } catch (Throwable e) {
+                                    routingContext.fail(e);
+                                }
+                            }, executor);
                         } else {
                             httpResponse.setStatusCode(204);
-                            handler.handle();
                             httpResponse.end();
                         }
                     } catch (Throwable t) {
@@ -229,20 +221,16 @@ public class VertxRequestHandler implements Handler<RoutingContext> {
                             }
                         };
 
-                        Object funqData = response.getOutput();
                         if (invoker.hasOutput()) {
                             responseEvent.put("datacontenttype", "application/json");
-                            if (invoker.isAsync()) {
-                                ((CompletionStage<?>) funqData)
-                                        .whenCompleteAsync((obj, t) -> {
-                                            if (t != null)
-                                                routingContext.fail(t);
-                                            else
-                                                doResponse.accept(Optional.ofNullable(obj));
-                                        });
-                            } else {
-                                doResponse.accept(Optional.ofNullable(funqData));
-                            }
+                            CompletionStage<?> output = response.getOutput();
+                            output.whenCompleteAsync((obj, t) -> {
+                                if (t != null) {
+                                    routingContext.fail(t);
+                                } else {
+                                    doResponse.accept(Optional.ofNullable(obj));
+                                }
+                            });
                         } else {
                             doResponse.accept(Optional.empty());
                         }
