@@ -37,18 +37,21 @@ public class FunctionInvoker {
             }
         }
         constructor = new FunctionConstructor(targetClass);
-        Class rt = method.getReturnType();
-        if (rt != null) {
-            if (CompletionStage.class.isAssignableFrom(rt)) {
-                try {
-                    Type type = ((ParameterizedType) method.getGenericReturnType()).getActualTypeArguments()[0];
-                    outputType = (Class) type;
-                } catch (Exception ex) {
-                    outputType = Object.class;
-                }
+        Class<?> returnType = method.getReturnType();
+        if (returnType != null) {
+            if (CompletionStage.class.isAssignableFrom(returnType)) {
+                outputType = Object.class;
                 isAsync = true;
+
+                Type genericReturnType = method.getGenericReturnType();
+                if (genericReturnType instanceof ParameterizedType) {
+                    Type[] actualParams = ((ParameterizedType) genericReturnType).getActualTypeArguments();
+                    if (actualParams.length == 1 && actualParams[0] instanceof Class<?>) {
+                        outputType = (Class<?>) actualParams[0];
+                    }
+                }
             } else {
-                outputType = rt;
+                outputType = returnType;
             }
         }
     }
