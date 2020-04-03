@@ -1,11 +1,13 @@
 package io.quarkus.funqy.runtime.bindings.http;
 
 import java.io.InputStream;
+import java.util.concurrent.CompletionStage;
 import java.util.concurrent.Executor;
 
 import javax.enterprise.inject.Instance;
 import javax.enterprise.inject.spi.CDI;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
 import org.jboss.logging.Logger;
 
 import com.fasterxml.jackson.databind.ObjectReader;
@@ -116,7 +118,19 @@ public class VertxRequestHandler implements Handler<RoutingContext> {
             routingContext.response().setStatusCode(200);
             if (invoker.hasOutput()) {
                 ObjectWriter writer = (ObjectWriter) invoker.getBindingContext().get(ObjectWriter.class.getName());
-                routingContext.response().end(writer.writeValueAsString(funqyResponse.getOutput()));
+                CompletionStage<?> output = funqyResponse.getOutput();
+                output.whenCompleteAsync((o, t) -> {
+                    if (t != null) {
+                        routingContext.fail(t);
+                        return;
+                    }
+                    try {
+                        routingContext.response().end(writer.writeValueAsString(o));
+                    } catch (JsonProcessingException e) {
+                        log.error("Failed to marshal", e);
+                        routingContext.fail(400);
+                    }
+                }, executor);
             } else {
                 routingContext.response().end();
             }

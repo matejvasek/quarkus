@@ -4,22 +4,23 @@ import java.lang.annotation.Annotation;
 import java.lang.reflect.*;
 import java.util.ArrayList;
 import java.util.Map;
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
 import java.util.concurrent.ConcurrentHashMap;
 
 public class FunctionInvoker {
     protected String name;
-    protected Class targetClass;
+    protected Class<?> targetClass;
     protected Method method;
-    protected FunctionConstructor constructor;
+    protected FunctionConstructor<?> constructor;
     protected ArrayList<ValueInjector> parameterInjectors;
-    protected Class inputType;
-    protected Class outputType;
+    protected Class<?> inputType;
+    protected Class<?> outputType;
     protected boolean isAsync;
 
     protected Map<String, Object> bindingContext = new ConcurrentHashMap<>();
 
-    public FunctionInvoker(String name, Class targetClass, Method method) {
+    public FunctionInvoker(String name, Class<?> targetClass, Method method) {
         this.name = name;
         this.targetClass = targetClass;
         this.method = method;
@@ -105,8 +106,19 @@ public class FunctionInvoker {
         }
         Object target = constructor.construct();
         try {
-            Object result = method.invoke(target, args);
-            response.setOutput(result);
+            try {
+                Object result = method.invoke(target, args);
+                if (isAsync()) {
+                    response.setOutput((CompletionStage<?>) result);
+                } else {
+                    response.setOutput(CompletableFuture.completedFuture(result));
+                }
+            } catch (Throwable t) {
+                CompletableFuture<?> fut = new CompletableFuture<>();
+                fut.completeExceptionally(t);
+                response.setOutput(fut);
+                throw t;
+            }
         } catch (IllegalAccessException e) {
             throw new InternalError("Failed to invoke function", e);
         } catch (InvocationTargetException e) {

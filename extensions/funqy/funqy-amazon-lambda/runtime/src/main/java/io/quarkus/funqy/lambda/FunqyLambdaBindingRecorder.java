@@ -3,6 +3,8 @@ package io.quarkus.funqy.lambda;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
+import java.util.concurrent.CompletionStage;
+import java.util.concurrent.ExecutionException;
 
 import org.jboss.logging.Logger;
 
@@ -64,8 +66,11 @@ public class FunqyLambdaBindingRecorder {
             input = reader.readValue(inputStream);
         }
         FunqyServerResponse response = dispatch(input);
-        if (response.getOutput() != null) {
-            writer.writeValue(outputStream, response.getOutput());
+        CompletionStage<?> output = response.getOutput();
+        try {
+            writer.writeValue(outputStream, output.toCompletableFuture().get());
+        } catch (InterruptedException | ExecutionException e) {
+            throw new RuntimeException(e);
         }
     }
 
@@ -77,7 +82,8 @@ public class FunqyLambdaBindingRecorder {
             @Override
             protected Object processRequest(Object input, AmazonLambdaContext context) throws Exception {
                 FunqyServerResponse response = dispatch(input);
-                return response.getOutput();
+                CompletionStage<?> output = response.getOutput();
+                return output.toCompletableFuture().get();
             }
 
             @Override
