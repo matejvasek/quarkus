@@ -7,9 +7,9 @@ import java.util.concurrent.Executor;
 import javax.enterprise.inject.Instance;
 import javax.enterprise.inject.spi.CDI;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
 import org.jboss.logging.Logger;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectReader;
 import com.fasterxml.jackson.databind.ObjectWriter;
 
