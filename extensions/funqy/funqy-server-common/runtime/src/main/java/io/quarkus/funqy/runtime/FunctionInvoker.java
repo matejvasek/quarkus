@@ -79,11 +79,11 @@ public class FunctionInvoker {
         return outputType;
     }
 
-    public boolean isAsync() {
+    protected boolean isAsync() {
         return isAsync;
     }
 
-    public void setAsync(boolean async) {
+    protected void setAsync(boolean async) {
         isAsync = async;
     }
 
@@ -106,23 +106,38 @@ public class FunctionInvoker {
         }
         Object target = constructor.construct();
         try {
-            try {
-                Object result = method.invoke(target, args);
-                if (isAsync()) {
-                    response.setOutput((CompletionStage<?>) result);
-                } else {
-                    response.setOutput(CompletableFuture.completedFuture(result));
-                }
-            } catch (Throwable t) {
-                CompletableFuture<?> fut = new CompletableFuture<>();
-                fut.completeExceptionally(t);
-                response.setOutput(fut);
-                throw t;
+            Object result = method.invoke(target, args);
+            if (isAsync()) {
+                CompletableFuture<Object> withWrappedException = new CompletableFuture<>();
+                ((CompletionStage<?>) result).whenCompleteAsync((o, t) -> {
+                    if (t != null) {
+                        withWrappedException.completeExceptionally(new ApplicationException(t));
+                    } else {
+                        withWrappedException.complete(o);
+                    }
+                });
+                response.setOutput(withWrappedException);
+            } else {
+                response.setOutput(CompletableFuture.completedFuture(result));
             }
         } catch (IllegalAccessException e) {
-            throw new InternalError("Failed to invoke function", e);
+            InternalError ex = new InternalError("Failed to invoke function", e);
+            response.setOutput(exceptionalCompletionStage(ex));
+            throw ex;
         } catch (InvocationTargetException e) {
-            throw new ApplicationException(e.getCause());
+            ApplicationException ex = new ApplicationException(e.getCause());
+            response.setOutput(exceptionalCompletionStage(ex));
+            throw ex;
+        } catch (Throwable t) {
+            InternalError ex = new InternalError(t);
+            response.setOutput(exceptionalCompletionStage(ex));
+            throw ex;
         }
+    }
+
+    private static CompletionStage<?> exceptionalCompletionStage(Throwable t) {
+        CompletableFuture<?> fut = new CompletableFuture<>();
+        fut.completeExceptionally(t);
+        return fut;
     }
 }
