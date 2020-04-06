@@ -66,15 +66,12 @@ public class FunqyLambdaBindingRecorder {
             input = reader.readValue(inputStream);
         }
         FunqyServerResponse response = dispatch(input);
-        CompletionStage<?> output = response.getOutput();
-        try {
-            Object value = output.toCompletableFuture().get();
-            if (value != null) {
-                writer.writeValue(outputStream, value);
-            }
-        } catch (InterruptedException | ExecutionException e) {
-            throw new RuntimeException(e);
+
+        Object value = awaitCompletionStage(response.getOutput());
+        if (value != null) {
+            writer.writeValue(outputStream, value);
         }
+
     }
 
     @SuppressWarnings("rawtypes")
@@ -85,8 +82,7 @@ public class FunqyLambdaBindingRecorder {
             @Override
             protected Object processRequest(Object input, AmazonLambdaContext context) throws Exception {
                 FunqyServerResponse response = dispatch(input);
-                CompletionStage<?> output = response.getOutput();
-                return output.toCompletableFuture().get();
+                return awaitCompletionStage(response.getOutput());
             }
 
             @Override
@@ -112,6 +108,23 @@ public class FunqyLambdaBindingRecorder {
         };
         loop.startPollLoop(context);
 
+    }
+
+    private static <T> T awaitCompletionStage(CompletionStage<T> output) {
+        T val;
+        try {
+            val = output.toCompletableFuture().get();
+        } catch (ExecutionException ex) {
+            Throwable inner = ex.getCause();
+            if (inner instanceof RuntimeException) {
+                throw (RuntimeException) inner;
+            } else {
+                throw new RuntimeException(inner);
+            }
+        } catch (InterruptedException ex) {
+            throw new RuntimeException(ex);
+        }
+        return val;
     }
 
     private static FunqyServerResponse dispatch(Object input) {
