@@ -6,6 +6,7 @@ import java.io.OutputStream;
 import java.lang.reflect.Method;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.*;
 
 import org.jboss.logging.Logger;
 
@@ -139,13 +140,34 @@ public class AmazonLambdaRecorder {
 
     @SuppressWarnings("rawtypes")
     public void startPollLoop(ShutdownContext context) {
+        final Executor executor = Executors.newFixedThreadPool(16);
         AbstractLambdaPollLoop loop = new AbstractLambdaPollLoop(AmazonLambdaMapperRecorder.objectMapper,
                 AmazonLambdaMapperRecorder.cognitoIdReader, AmazonLambdaMapperRecorder.cognitoIdReader) {
 
             @Override
-            protected Object processRequest(Object input, AmazonLambdaContext context) throws Exception {
+            protected CompletionStage<?> processRequest(Object input, AmazonLambdaContext context) throws Exception {
                 RequestHandler handler = beanContainer.instance(handlerClass);
-                return handler.handleRequest(input, context);
+
+                CompletableFuture<Object> result = new CompletableFuture<>();
+                executor.execute(() -> {
+                    try {
+                        Object val = handler.handleRequest(input, context);
+                        if (!(val instanceof CompletionStage)) {
+                            result.complete(val);
+                        } else {
+                            ((CompletionStage<?>) val).whenCompleteAsync((o, t) -> {
+                                if (t != null) {
+                                    result.completeExceptionally(t);
+                                } else {
+                                    result.complete(o);
+                                }
+                            });
+                        }
+                    } catch (Throwable t) {
+                        result.completeExceptionally(t);
+                    }
+                });
+                return result;
             }
 
             @Override

@@ -80,9 +80,9 @@ public class FunqyLambdaBindingRecorder {
                 AmazonLambdaMapperRecorder.cognitoIdReader, AmazonLambdaMapperRecorder.cognitoIdReader) {
 
             @Override
-            protected Object processRequest(Object input, AmazonLambdaContext context) throws Exception {
+            protected CompletionStage<?> processRequest(Object input, AmazonLambdaContext context) throws Exception {
                 FunqyServerResponse response = dispatch(input);
-                return awaitCompletionStage(response.getOutput());
+                return response.getOutput();
             }
 
             @Override

@@ -5,6 +5,7 @@ import java.io.InputStream;
 import java.io.OutputStream;
 import java.net.HttpURLConnection;
 import java.net.URL;
+import java.util.concurrent.CompletionStage;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 import org.jboss.logging.Logger;
@@ -69,8 +70,28 @@ public abstract class AbstractLambdaPollLoop {
                                     Object input = null;
                                     if (getInputReader() != null)
                                         input = getInputReader().readValue(requestConnection.getInputStream());
-                                    Object output = processRequest(input, createContext(requestConnection));
-                                    postResponse(url, output);
+                                    CompletionStage<?> output = processRequest(input, createContext(requestConnection));
+                                    output.whenCompleteAsync((o, t) -> {
+                                        try {
+                                            if (t != null) {
+                                                throw t;
+                                            }
+                                            postResponse(url, o);
+                                        } catch (Throwable e) {
+                                            try {
+                                                postError(AmazonLambdaApi.invocationError(requestId),
+                                                        new FunctionError(t.getClass().getName(), t.getMessage()));
+                                            } catch (IOException e2) {
+                                                throw new RuntimeException(e2);
+                                            }
+                                        } finally {
+                                            try {
+                                                requestConnection.getInputStream().close();
+                                            } catch (IOException e) {
+                                                throw new RuntimeException(e);
+                                            }
+                                        }
+                                    });
                                 }
                             } catch (Exception e) {
                                 log.error("Failed to run lambda", e);
@@ -86,9 +107,8 @@ public abstract class AbstractLambdaPollLoop {
                             if (app != null) {
                                 app.stop();
                             }
-                            return;
-                        } finally {
                             requestConnection.getInputStream().close();
+                            return;
                         }
 
                     }
@@ -120,7 +140,7 @@ public abstract class AbstractLambdaPollLoop {
      * @return Unmarshalled Java output (will probably be marshalled to json)
      * @throws Exception
      */
-    protected abstract Object processRequest(Object input, AmazonLambdaContext context) throws Exception;
+    protected abstract CompletionStage<?> processRequest(Object input, AmazonLambdaContext context) throws Exception;
 
     protected abstract void processRequest(InputStream input, OutputStream output, AmazonLambdaContext context)
             throws Exception;
