@@ -68,7 +68,10 @@ public class FunqyLambdaBindingRecorder {
         FunqyServerResponse response = dispatch(input);
         CompletionStage<?> output = response.getOutput();
         try {
-            writer.writeValue(outputStream, output.toCompletableFuture().get());
+            Object value = output.toCompletableFuture().get();
+            if (value != null) {
+                writer.writeValue(outputStream, value);
+            }
         } catch (InterruptedException | ExecutionException e) {
             throw new RuntimeException(e);
         }
