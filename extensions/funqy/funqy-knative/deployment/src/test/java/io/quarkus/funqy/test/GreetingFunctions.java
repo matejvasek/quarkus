@@ -15,14 +15,27 @@ public class GreetingFunctions {
     GreetingService service;
 
     @Funq
-    public CompletionStage<Greeting> greet(Identity name) {
+    public Greeting greet(Identity name) {
+        if (name == null) {
+            throw new IllegalArgumentException("Identity cannot be null.");
+        }
+        String message = service.hello(name.getName());
+        Greeting greeting = new Greeting();
+        greeting.setMessage(message);
+        greeting.setName(name.getName());
+        return greeting;
+    }
+
+    @Funq
+    public CompletionStage<Greeting> greetAsync(Identity name) {
         CompletableFuture<Greeting> result = new CompletableFuture<>();
         if (name == null) {
             result.completeExceptionally(new IllegalArgumentException("Identity cannot be null."));
             return result;
         }
 
-        new Timer().schedule(new TimerTask() {
+        Timer timer = new Timer();
+        timer.schedule(new TimerTask() {
             @Override
             public void run() {
                 String message = service.hello(name.getName());
@@ -30,6 +43,7 @@ public class GreetingFunctions {
                 greeting.setMessage(message);
                 greeting.setName(name.getName());
                 result.complete(greeting);
+                timer.cancel();
             }
         }, Duration.ofMillis(1).toMillis());
 

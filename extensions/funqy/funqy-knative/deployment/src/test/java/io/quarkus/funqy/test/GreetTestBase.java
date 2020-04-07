@@ -2,22 +2,16 @@ package io.quarkus.funqy.test;
 
 import static org.hamcrest.Matchers.*;
 
-import org.jboss.shrinkwrap.api.ShrinkWrap;
-import org.jboss.shrinkwrap.api.spec.JavaArchive;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.extension.RegisterExtension;
 
-import io.quarkus.test.QuarkusUnitTest;
 import io.restassured.RestAssured;
 import io.restassured.parsing.Parser;
 
-public class GreetTest {
-    @RegisterExtension
-    static QuarkusUnitTest test = new QuarkusUnitTest()
-            .setArchiveProducer(() -> ShrinkWrap.create(JavaArchive.class)
-                    .addAsResource("greeting.properties", "application.properties")
-                    .addClasses(PrimitiveFunctions.class, GreetingFunctions.class, Greeting.class, GreetingService.class,
-                            Identity.class));
+public abstract class GreetTestBase {
+
+    protected abstract String getCeSource();
+
+    protected abstract String getCeType();
 
     @Test
     public void testVanilla() {
@@ -48,8 +42,8 @@ public class GreetTest {
                 .then().statusCode(200)
                 .header("ce-id", notNullValue())
                 .header("ce-specversion", equalTo("1.0"))
-                .header("ce-source", equalTo("dev.knative.greet"))
-                .header("ce-type", equalTo("greet"))
+                .header("ce-source", equalTo(getCeSource()))
+                .header("ce-type", equalTo(getCeType()))
                 .body("name", equalTo("Bill"))
                 .body("message", equalTo("Hello Bill!"));
     }
@@ -81,8 +75,8 @@ public class GreetTest {
                 .defaultParser(Parser.JSON)
                 .body("id", notNullValue())
                 .body("specversion", equalTo("1.0"))
-                .body("type", equalTo("greet"))
-                .body("source", equalTo("dev.knative.greet"))
+                .body("type", equalTo(getCeType()))
+                .body("source", equalTo(getCeSource()))
                 .body("datacontenttype", equalTo("application/json"))
                 .body("data.name", equalTo("Bill"))
                 .body("data.message", equalTo("Hello Bill!"));
