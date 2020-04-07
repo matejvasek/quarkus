@@ -41,15 +41,18 @@ public class FunctionInvoker {
         Class<?> returnType = method.getReturnType();
         if (returnType != null) {
             if (CompletionStage.class.isAssignableFrom(returnType)) {
-                outputType = Object.class;
+                outputType = null;
                 isAsync = true;
-
                 Type genericReturnType = method.getGenericReturnType();
                 if (genericReturnType instanceof ParameterizedType) {
                     Type[] actualParams = ((ParameterizedType) genericReturnType).getActualTypeArguments();
                     if (actualParams.length == 1 && actualParams[0] instanceof Class<?>) {
                         outputType = (Class<?>) actualParams[0];
                     }
+                }
+                if (outputType == null) {
+                    throw new IllegalArgumentException(
+                            "CompletionStage must be used with type parameter (e.g. CompletionStage<String>).");
                 }
             } else {
                 outputType = returnType;
