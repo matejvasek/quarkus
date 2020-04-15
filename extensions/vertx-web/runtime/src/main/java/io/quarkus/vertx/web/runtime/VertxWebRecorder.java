@@ -1,8 +1,8 @@
 package io.quarkus.vertx.web.runtime;
 
 import java.lang.reflect.InvocationTargetException;
-import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.function.Function;
 
 import io.quarkus.runtime.annotations.Recorder;
@@ -15,7 +15,7 @@ import io.vertx.ext.web.RoutingContext;
 @Recorder
 public class VertxWebRecorder {
 
-    static volatile List<RouteHandler> handlers = new ArrayList<>();
+    private final List<RouteHandler> handlers = new CopyOnWriteArrayList<>();
 
     @SuppressWarnings("unchecked")
     public Handler<RoutingContext> createHandler(String handlerClassName) {
