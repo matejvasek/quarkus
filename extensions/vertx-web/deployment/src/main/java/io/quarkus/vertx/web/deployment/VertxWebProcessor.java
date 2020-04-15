@@ -38,13 +38,8 @@ import io.quarkus.arc.ArcContainer;
 import io.quarkus.arc.InjectableBean;
 import io.quarkus.arc.InjectableContext;
 import io.quarkus.arc.InjectableReferenceProvider;
-import io.quarkus.arc.deployment.AnnotationsTransformerBuildItem;
-import io.quarkus.arc.deployment.BeanArchiveIndexBuildItem;
-import io.quarkus.arc.deployment.BeanContainerBuildItem;
-import io.quarkus.arc.deployment.CustomScopeAnnotationsBuildItem;
-import io.quarkus.arc.deployment.UnremovableBeanBuildItem;
+import io.quarkus.arc.deployment.*;
 import io.quarkus.arc.deployment.UnremovableBeanBuildItem.BeanClassAnnotationExclusion;
-import io.quarkus.arc.deployment.ValidationPhaseBuildItem;
 import io.quarkus.arc.deployment.ValidationPhaseBuildItem.ValidationErrorBuildItem;
 import io.quarkus.arc.impl.CreationalContextImpl;
 import io.quarkus.arc.processor.AnnotationStore;
@@ -326,11 +321,7 @@ class VertxWebProcessor {
         }
 
         detectConflictingRoutes(matchers);
-    }
 
-    @BuildStep
-    @Record(ExecutionTime.RUNTIME_INIT)
-    void initRouteHandlers(VertxWebRecorder recorder, BeanContainerBuildItem container) {
         recorder.initHandlers();
     }
 
