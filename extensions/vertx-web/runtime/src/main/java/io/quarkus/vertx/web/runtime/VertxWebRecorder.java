@@ -2,6 +2,8 @@ package io.quarkus.vertx.web.runtime;
 
 import java.lang.reflect.InvocationTargetException;
 import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
 import java.util.function.Function;
 
@@ -36,6 +38,7 @@ public class VertxWebRecorder {
     }
 
     public void initHandlers() {
+        System.err.println("\n### handlers: " + Arrays.toString(handlers.toArray()) + "\n");
         for (RouteHandler routeHandler : handlers) {
             routeHandler.initialize();
         }
