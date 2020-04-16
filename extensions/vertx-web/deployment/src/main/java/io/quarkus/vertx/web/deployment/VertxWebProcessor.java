@@ -326,6 +326,7 @@ class VertxWebProcessor {
         }
 
         detectConflictingRoutes(matchers);
+        System.err.println("\n### addAdditionalRoutes done\n");
     }
 
     @BuildStep
