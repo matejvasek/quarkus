@@ -136,8 +136,7 @@ public class VertxRequestHandler implements Handler<RoutingContext> {
                                 routingContext.fail(400);
                             }
                         },
-                        t -> routingContext.fail(t)
-                );
+                        t -> routingContext.fail(t));
             } else {
                 response.end();
             }

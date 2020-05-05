@@ -138,7 +138,6 @@ public class VertxRequestHandler implements Handler<RoutingContext> {
                             ObjectWriter writer = (ObjectWriter) invoker.getBindingContext().get(ObjectWriter.class.getName());
                             httpResponse.putHeader("Content-Type", "application/json");
 
-
                             Uni<?> output = response.getOutput();
                             output.emitOn(executor).subscribe().with(
                                     o -> {
@@ -151,8 +150,7 @@ public class VertxRequestHandler implements Handler<RoutingContext> {
                                             routingContext.fail(e);
                                         }
                                     },
-                                    routingContext::fail
-                            );
+                                    routingContext::fail);
 
                         } else {
                             httpResponse.setStatusCode(204);
@@ -239,8 +237,7 @@ public class VertxRequestHandler implements Handler<RoutingContext> {
                             Uni<?> output = response.getOutput();
                             output.emitOn(executor).subscribe().with(
                                     o -> doResponse.accept(Optional.ofNullable(o)),
-                                    routingContext::fail
-                            );
+                                    routingContext::fail);
 
                         } else {
                             doResponse.accept(Optional.empty());
