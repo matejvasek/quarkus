@@ -3,8 +3,7 @@ package io.quarkus.funqy.lambda;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
-import java.util.concurrent.CompletionStage;
-import java.util.concurrent.ExecutionException;
+import java.util.concurrent.CompletionException;
 
 import org.jboss.logging.Logger;
 
@@ -25,6 +24,7 @@ import io.quarkus.funqy.runtime.FunqyServerResponse;
 import io.quarkus.funqy.runtime.RequestContextImpl;
 import io.quarkus.runtime.ShutdownContext;
 import io.quarkus.runtime.annotations.Recorder;
+import io.smallrye.mutiny.Uni;
 
 /**
  * Provides the runtime methods to bootstrap Quarkus Funq
@@ -67,7 +67,7 @@ public class FunqyLambdaBindingRecorder {
         }
         FunqyServerResponse response = dispatch(input);
 
-        Object value = awaitCompletionStage(response.getOutput());
+        Object value = awaitUni(response.getOutput());
         if (value != null) {
             writer.writeValue(outputStream, value);
         }
@@ -82,7 +82,7 @@ public class FunqyLambdaBindingRecorder {
             @Override
             protected Object processRequest(Object input, AmazonLambdaContext context) throws Exception {
                 FunqyServerResponse response = dispatch(input);
-                return awaitCompletionStage(response.getOutput());
+                return awaitUni(response.getOutput());
             }
 
             @Override
@@ -110,19 +110,17 @@ public class FunqyLambdaBindingRecorder {
 
     }
 
-    private static <T> T awaitCompletionStage(CompletionStage<T> output) {
+    private static <T> T awaitUni(Uni<T> output) {
         T val;
         try {
-            val = output.toCompletableFuture().get();
-        } catch (ExecutionException ex) {
+            val = output.await().indefinitely();
+        } catch (CompletionException ex) {
             Throwable inner = ex.getCause();
             if (inner instanceof RuntimeException) {
                 throw (RuntimeException) inner;
             } else {
                 throw new RuntimeException(inner);
             }
-        } catch (InterruptedException ex) {
-            throw new RuntimeException(ex);
         }
         return val;
     }

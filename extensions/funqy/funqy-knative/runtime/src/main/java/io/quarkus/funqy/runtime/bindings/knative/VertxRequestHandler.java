@@ -2,7 +2,6 @@ package io.quarkus.funqy.runtime.bindings.knative;
 
 import java.io.InputStream;
 import java.util.*;
-import java.util.concurrent.CompletionStage;
 import java.util.concurrent.Executor;
 import java.util.function.Consumer;
 
@@ -26,9 +25,11 @@ import io.quarkus.funqy.runtime.RequestContextImpl;
 import io.quarkus.security.identity.CurrentIdentityAssociation;
 import io.quarkus.vertx.http.runtime.CurrentVertxRequest;
 import io.quarkus.vertx.http.runtime.security.QuarkusHttpUser;
+import io.smallrye.mutiny.Uni;
 import io.vertx.core.Handler;
 import io.vertx.core.Vertx;
 import io.vertx.core.http.HttpMethod;
+import io.vertx.core.http.HttpServerRequest;
 import io.vertx.core.http.HttpServerResponse;
 import io.vertx.ext.web.RoutingContext;
 
@@ -109,7 +110,11 @@ public class VertxRequestHandler implements Handler<RoutingContext> {
     }
 
     private void vanillaMode(RoutingContext routingContext, ResponseProcessing handler) {
-        routingContext.request().bodyHandler(buff -> {
+
+        final HttpServerRequest request = routingContext.request();
+        final HttpServerResponse httpResponse = routingContext.response();
+
+        request.bodyHandler(buff -> {
             try {
                 Object input = null;
                 if (buff.length() > 0) {
@@ -126,7 +131,6 @@ public class VertxRequestHandler implements Handler<RoutingContext> {
                 Object finalInput = input;
                 executor.execute(() -> {
                     try {
-                        final HttpServerResponse httpResponse = routingContext.response();
                         FunqyServerResponse response = dispatch(routingContext, invoker, finalInput);
                         handler.handle();
                         if (invoker.hasOutput()) {
@@ -134,21 +138,22 @@ public class VertxRequestHandler implements Handler<RoutingContext> {
                             ObjectWriter writer = (ObjectWriter) invoker.getBindingContext().get(ObjectWriter.class.getName());
                             httpResponse.putHeader("Content-Type", "application/json");
 
-                            CompletionStage<?> output = response.getOutput();
-                            output.whenCompleteAsync((obj, t) -> {
-                                if (t != null) {
-                                    routingContext.fail(t);
-                                    return;
-                                }
-                                try {
-                                    httpResponse.end(writer.writeValueAsString(obj));
-                                } catch (JsonProcessingException jpe) {
-                                    log.error("Failed to unmarshal input", jpe);
-                                    routingContext.fail(400);
-                                } catch (Throwable e) {
-                                    routingContext.fail(e);
-                                }
-                            }, executor);
+
+                            Uni<?> output = response.getOutput();
+                            output.emitOn(executor).subscribe().with(
+                                    o -> {
+                                        try {
+                                            httpResponse.end(writer.writeValueAsString(o));
+                                        } catch (JsonProcessingException jpe) {
+                                            log.error("Failed to unmarshal input", jpe);
+                                            routingContext.fail(400);
+                                        } catch (Throwable e) {
+                                            routingContext.fail(e);
+                                        }
+                                    },
+                                    routingContext::fail
+                            );
+
                         } else {
                             httpResponse.setStatusCode(204);
                             httpResponse.end();
@@ -166,7 +171,8 @@ public class VertxRequestHandler implements Handler<RoutingContext> {
     }
 
     private void structuredMode(RoutingContext routingContext) {
-        routingContext.request().bodyHandler(buff -> {
+        HttpServerRequest request = routingContext.request();
+        request.bodyHandler(buff -> {
             try {
                 ByteBufInputStream in = new ByteBufInputStream(buff.getByteBuf());
                 Object input = null;
@@ -230,14 +236,12 @@ public class VertxRequestHandler implements Handler<RoutingContext> {
 
                         if (invoker.hasOutput()) {
                             responseEvent.put("datacontenttype", "application/json");
-                            CompletionStage<?> output = response.getOutput();
-                            output.whenCompleteAsync((obj, t) -> {
-                                if (t != null) {
-                                    routingContext.fail(t);
-                                } else {
-                                    doResponse.accept(Optional.ofNullable(obj));
-                                }
-                            });
+                            Uni<?> output = response.getOutput();
+                            output.emitOn(executor).subscribe().with(
+                                    o -> doResponse.accept(Optional.ofNullable(o)),
+                                    routingContext::fail
+                            );
+
                         } else {
                             doResponse.accept(Optional.empty());
                         }
