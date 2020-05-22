@@ -1,9 +1,7 @@
 package io.quarkus.funqy.test;
 
-import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.CompletionStage;
-
 import io.quarkus.funqy.Funq;
+import io.smallrye.mutiny.Uni;
 
 public class PrimitiveFunctions {
     @Funq
@@ -12,8 +10,8 @@ public class PrimitiveFunctions {
     }
 
     @Funq
-    public CompletionStage<String> toLowerCaseAsync(String val) {
-        return CompletableFuture.completedFuture(val.toLowerCase());
+    public Uni<String> toLowerCaseAsync(String val) {
+        return Uni.createFrom().item(() -> val.toLowerCase());
     }
 
     @Funq
@@ -31,8 +29,8 @@ public class PrimitiveFunctions {
     }
 
     @Funq
-    public CompletableFuture<Integer> doubleItAsync(int val) {
-        return CompletableFuture.completedFuture(val * 2);
+    public Uni<Integer> doubleItAsync(int val) {
+        return Uni.createFrom().item(() -> val * 2);
     }
 
 }

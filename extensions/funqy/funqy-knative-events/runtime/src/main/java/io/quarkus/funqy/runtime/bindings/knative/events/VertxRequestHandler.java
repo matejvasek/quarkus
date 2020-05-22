@@ -7,7 +7,6 @@ import java.io.InputStream;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.UUID;
-import java.util.concurrent.CompletionStage;
 import java.util.concurrent.Executor;
 import java.util.function.Consumer;
 
@@ -190,21 +189,19 @@ public class VertxRequestHandler implements Handler<RoutingContext> {
                             ObjectWriter writer = (ObjectWriter) invoker.getBindingContext().get(ObjectWriter.class.getName());
                             httpResponse.putHeader("Content-Type", "application/json");
 
-                            CompletionStage<?> output = response.getOutput();
-                            output.whenCompleteAsync((obj, t) -> {
-                                if (t != null) {
-                                    routingContext.fail(t);
-                                    return;
-                                }
-                                try {
-                                    httpResponse.end(writer.writeValueAsString(obj));
-                                } catch (JsonProcessingException jpe) {
-                                    log.error("Failed to unmarshal input", jpe);
-                                    routingContext.fail(400);
-                                } catch (Throwable e) {
-                                    routingContext.fail(e);
-                                }
-                            }, executor);
+                            response.getOutput().emitOn(executor).subscribe().with(
+                                    obj -> {
+                                        try {
+                                            httpResponse.end(writer.writeValueAsString(obj));
+                                        } catch (JsonProcessingException jpe) {
+                                            log.error("Failed to unmarshal input", jpe);
+                                            routingContext.fail(400);
+                                        } catch (Throwable e) {
+                                            routingContext.fail(e);
+                                        }
+                                    },
+                                    t -> routingContext.fail(t));
+
                         } else {
                             httpResponse.setStatusCode(204);
                             httpResponse.end();
@@ -287,32 +284,30 @@ public class VertxRequestHandler implements Handler<RoutingContext> {
                                 targetInvoker, finalInput);
 
                         if (targetInvoker.hasOutput()) {
-                            CompletionStage<?> output = response.getOutput();
-                            output.whenCompleteAsync((obj, t) -> {
-                                if (t != null) {
-                                    routingContext.fail(t);
-                                } else {
-                                    httpResponse.setStatusCode(200);
-                                    final Map<String, Object> responseEvent = new HashMap<>();
+                            response.getOutput().emitOn(executor).subscribe().with(
+                                    obj -> {
+                                        httpResponse.setStatusCode(200);
+                                        final Map<String, Object> responseEvent = new HashMap<>();
 
-                                    responseEvent.put("id", getResponseId());
-                                    responseEvent.put("specversion", "1.0");
-                                    responseEvent.put("source",
-                                            (String) targetInvoker.getBindingContext().get(RESPONSE_SOURCE));
-                                    responseEvent.put("type",
-                                            (String) targetInvoker.getBindingContext().get(RESPONSE_TYPE));
-                                    responseEvent.put("datacontenttype", "application/json");
-                                    responseEvent.put("data", obj);
-                                    ObjectWriter writer = (ObjectWriter) targetInvoker.getBindingContext()
-                                            .get(ObjectWriter.class.getName());
-                                    try {
-                                        httpResponse.end(mapper.writer().writeValueAsString(responseEvent));
-                                    } catch (JsonProcessingException e) {
-                                        log.error("Failed to marshal", e);
-                                        routingContext.fail(400);
-                                    }
-                                }
-                            });
+                                        responseEvent.put("id", getResponseId());
+                                        responseEvent.put("specversion", "1.0");
+                                        responseEvent.put("source",
+                                                (String) targetInvoker.getBindingContext().get(RESPONSE_SOURCE));
+                                        responseEvent.put("type",
+                                                (String) targetInvoker.getBindingContext().get(RESPONSE_TYPE));
+                                        responseEvent.put("datacontenttype", "application/json");
+                                        responseEvent.put("data", obj);
+                                        ObjectWriter writer = (ObjectWriter) targetInvoker.getBindingContext()
+                                                .get(ObjectWriter.class.getName());
+                                        try {
+                                            httpResponse.end(mapper.writer().writeValueAsString(responseEvent));
+                                        } catch (JsonProcessingException e) {
+                                            log.error("Failed to marshal", e);
+                                            routingContext.fail(400);
+                                        }
+                                    },
+                                    t -> routingContext.fail(t));
+
                         } else {
                             httpResponse.setStatusCode(204);
                             httpResponse.end();
