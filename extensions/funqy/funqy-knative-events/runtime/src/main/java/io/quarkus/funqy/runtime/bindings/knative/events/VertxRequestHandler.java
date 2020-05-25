@@ -183,15 +183,16 @@ public class VertxRequestHandler implements Handler<RoutingContext> {
                     try {
                         final HttpServerResponse httpResponse = routingContext.response();
                         FunqyServerResponse response = dispatch(event, routingContext, invoker, finalInput);
-                        if (invoker.hasOutput()) {
-                            httpResponse.setStatusCode(200);
-                            handler.handle();
-                            ObjectWriter writer = (ObjectWriter) invoker.getBindingContext().get(ObjectWriter.class.getName());
-                            httpResponse.putHeader("Content-Type", "application/json");
 
-                            response.getOutput().emitOn(executor).subscribe().with(
-                                    obj -> {
+                        response.getOutput().emitOn(executor).subscribe().with(
+                                obj -> {
+                                    if (invoker.hasOutput()) {
                                         try {
+                                            httpResponse.setStatusCode(200);
+                                            handler.handle();
+                                            ObjectWriter writer = (ObjectWriter) invoker.getBindingContext()
+                                                    .get(ObjectWriter.class.getName());
+                                            httpResponse.putHeader("Content-Type", "application/json");
                                             httpResponse.end(writer.writeValueAsString(obj));
                                         } catch (JsonProcessingException jpe) {
                                             log.error("Failed to unmarshal input", jpe);
@@ -199,13 +200,13 @@ public class VertxRequestHandler implements Handler<RoutingContext> {
                                         } catch (Throwable e) {
                                             routingContext.fail(e);
                                         }
-                                    },
-                                    t -> routingContext.fail(t));
+                                    } else {
+                                        httpResponse.setStatusCode(204);
+                                        httpResponse.end();
+                                    }
+                                },
+                                t -> routingContext.fail(t));
 
-                        } else {
-                            httpResponse.setStatusCode(204);
-                            httpResponse.end();
-                        }
                     } catch (Throwable t) {
                         log.error(t);
                         routingContext.fail(500, t);
@@ -283,9 +284,9 @@ public class VertxRequestHandler implements Handler<RoutingContext> {
                         final FunqyServerResponse response = dispatch(new JsonCloudEventImpl(event), routingContext,
                                 targetInvoker, finalInput);
 
-                        if (targetInvoker.hasOutput()) {
-                            response.getOutput().emitOn(executor).subscribe().with(
-                                    obj -> {
+                        response.getOutput().emitOn(executor).subscribe().with(
+                                obj -> {
+                                    if (targetInvoker.hasOutput()) {
                                         httpResponse.setStatusCode(200);
                                         final Map<String, Object> responseEvent = new HashMap<>();
 
@@ -305,13 +306,13 @@ public class VertxRequestHandler implements Handler<RoutingContext> {
                                             log.error("Failed to marshal", e);
                                             routingContext.fail(400);
                                         }
-                                    },
-                                    t -> routingContext.fail(t));
+                                    } else {
+                                        httpResponse.setStatusCode(204);
+                                        httpResponse.end();
+                                    }
+                                },
+                                t -> routingContext.fail(t));
 
-                        } else {
-                            httpResponse.setStatusCode(204);
-                            httpResponse.end();
-                        }
                     } catch (Throwable t) {
                         log.error(t);
                         routingContext.fail(500, t);

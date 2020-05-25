@@ -133,25 +133,26 @@ public class VertxRequestHandler implements Handler<RoutingContext> {
             FunqyRequestImpl funqyRequest = new FunqyRequestImpl(new RequestContextImpl(), input);
             FunqyResponseImpl funqyResponse = new FunqyResponseImpl();
             invoker.invoke(funqyRequest, funqyResponse);
-            if (invoker.hasOutput()) {
-                routingContext.response().setStatusCode(200);
-                routingContext.response().putHeader("Content-Type", "application/json");
-                ObjectWriter writer = (ObjectWriter) invoker.getBindingContext().get(ObjectWriter.class.getName());
 
-                funqyResponse.getOutput().emitOn(executor).subscribe().with(
-                        o -> {
+            funqyResponse.getOutput().emitOn(executor).subscribe().with(
+                    o -> {
+                        if (invoker.hasOutput()) {
+                            routingContext.response().setStatusCode(200);
+                            routingContext.response().putHeader("Content-Type", "application/json");
+                            ObjectWriter writer = (ObjectWriter) invoker.getBindingContext().get(ObjectWriter.class.getName());
                             try {
                                 routingContext.response().end(writer.writeValueAsString(o));
                             } catch (JsonProcessingException e) {
                                 log.error("Failed to marshal", e);
                                 routingContext.fail(400);
                             }
-                        },
-                        t -> routingContext.fail(t));
-            } else {
-                routingContext.response().setStatusCode(204);
-                routingContext.response().end();
-            }
+                        } else {
+                            routingContext.response().setStatusCode(204);
+                            routingContext.response().end();
+                        }
+                    },
+                    t -> routingContext.fail(t));
+
         } catch (Exception e) {
             routingContext.fail(e);
         } finally {

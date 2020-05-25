@@ -91,7 +91,7 @@ public class FunctionInvoker {
     }
 
     public boolean hasOutput() {
-        return outputType != null && !outputType.equals(Void.TYPE);
+        return outputType != null && !outputType.equals(Void.TYPE) && !outputType.equals(Void.class);
     }
 
     public String getName() {
