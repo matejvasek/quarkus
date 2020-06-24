@@ -19,5 +19,6 @@
         <module>funqy-http</module>
         <module>funqy-amazon-lambda</module>
         <module>funqy-knative-events</module>
+        <module>funqy-brasilia-events</module>
     </modules>
 </project>
