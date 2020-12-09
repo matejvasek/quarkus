@@ -1,19 +1,32 @@
 package io.quarkus.funqy.knative.events;
 
+import java.net.URI;
 import java.time.OffsetDateTime;
+import java.util.Iterator;
+import java.util.Map;
 
 /**
- * Cloud event. Represents only the headers. No data.
+ * CloudEvent.
  *
  */
-public interface CloudEvent {
+public interface CloudEvent<T> {
+
     String id();
 
     String specVersion();
 
-    String source();
+    URI source();
+
+    String type();
 
     String subject();
 
     OffsetDateTime time();
+
+    Iterator<Map.Entry<String, String>> extensions();
+
+    String dataContentType();
+
+    T data();
+
 }
