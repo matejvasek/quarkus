@@ -321,6 +321,15 @@ public class VertxRequestHandler implements Handler<RoutingContext> {
         } else {
             invoker = defaultInvoker;
         }
+
+        if (invoker.getBindingContext().get(INPUT_CE_DATA_TYPE) != null ||
+                invoker.getBindingContext().get(OUTPUT_CE_DATA_TYPE) != null) {
+            routingContext.fail(400);
+            log.errorf("Bad request: the '%s' function expects CloudEvent, but plain HTTP was received.",
+                    invoker.getName());
+            return;
+        }
+
         processHttpRequest(null, routingContext, invoker);
     }
 
