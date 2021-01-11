@@ -1,6 +1,5 @@
 package io.quarkus.funqy.knative.events;
 
-import java.net.URI;
 import java.time.OffsetDateTime;
 import java.util.Collections;
 import java.util.Map;
@@ -10,7 +9,7 @@ public class CloudEventBuilder<T> {
     private String specVersion;
     private String id;
     private String type;
-    private URI source;
+    private String source;
     private String dataContentType;
     private T data;
     private String subject;
@@ -39,7 +38,7 @@ public class CloudEventBuilder<T> {
         return this;
     }
 
-    public CloudEventBuilder<T> source(URI source) {
+    public CloudEventBuilder<T> source(String source) {
         this.source = source;
         return this;
     }
@@ -77,14 +76,14 @@ public class CloudEventBuilder<T> {
         private final String specVersion;
         private final String id;
         private final String type;
-        private final URI source;
+        private final String source;
         private final String dataContentType;
         private final T data;
         private final String subject;
         private final OffsetDateTime time;
         private final Map<String, String> extensions;
 
-        SimpleCloudEvent(String specVersion, String id, String type, URI source, String dataContentType, T data,
+        SimpleCloudEvent(String specVersion, String id, String type, String source, String dataContentType, T data,
                 String subject, OffsetDateTime time, Map<String, String> extensions) {
 
             Objects.requireNonNull(specVersion);
@@ -117,7 +116,7 @@ public class CloudEventBuilder<T> {
         }
 
         @Override
-        public URI source() {
+        public String source() {
             return source;
         }
 

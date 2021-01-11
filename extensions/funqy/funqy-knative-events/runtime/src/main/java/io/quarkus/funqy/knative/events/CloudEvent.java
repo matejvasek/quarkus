@@ -1,6 +1,5 @@
 package io.quarkus.funqy.knative.events;
 
-import java.net.URI;
 import java.time.OffsetDateTime;
 import java.util.Map;
 
@@ -14,7 +13,7 @@ public interface CloudEvent<T> {
 
     String specVersion();
 
-    URI source();
+    String source();
 
     String type();
 

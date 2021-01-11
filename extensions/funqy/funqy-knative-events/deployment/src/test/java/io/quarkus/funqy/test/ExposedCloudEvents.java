@@ -1,7 +1,6 @@
 package io.quarkus.funqy.test;
 
 import java.io.Serializable;
-import java.net.URI;
 import java.util.Objects;
 
 import io.quarkus.funqy.Funq;
@@ -35,7 +34,7 @@ public class ExposedCloudEvents {
                 .specVersion("1.0")
                 .id("double-it-id")
                 .type("double-it-type")
-                .source(URI.create("/OfDoubleIt"))
+                .source("/OfDoubleIt")
                 .dataContentType("application/json")
                 .data(new TestBean(inBean.getI() * 2, inBean.getS() + inBean.getS()))
                 .build();

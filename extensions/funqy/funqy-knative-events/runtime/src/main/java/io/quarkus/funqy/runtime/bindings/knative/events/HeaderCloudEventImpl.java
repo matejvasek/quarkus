@@ -3,7 +3,6 @@ package io.quarkus.funqy.runtime.bindings.knative.events;
 import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.lang.reflect.Type;
-import java.net.URI;
 import java.time.OffsetDateTime;
 import java.util.Collections;
 import java.util.Map;
@@ -22,7 +21,7 @@ import io.vertx.core.buffer.Buffer;
 class HeaderCloudEventImpl<T> extends AbstractCloudEvent<T> implements CloudEvent<T> {
     String id;
     String specVersion;
-    URI source;
+    String source;
     String type;
 
     String dataContentType;
@@ -65,9 +64,9 @@ class HeaderCloudEventImpl<T> extends AbstractCloudEvent<T> implements CloudEven
     }
 
     @Override
-    public URI source() {
+    public String source() {
         if (source == null && headers.contains("ce-source")) {
-            source = URI.create(headers.get("ce-source"));
+            source = headers.get("ce-source");
         }
 
         return source;

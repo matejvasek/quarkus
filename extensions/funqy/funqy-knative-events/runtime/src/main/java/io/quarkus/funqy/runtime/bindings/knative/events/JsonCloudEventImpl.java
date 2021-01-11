@@ -3,7 +3,6 @@ package io.quarkus.funqy.runtime.bindings.knative.events;
 import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.lang.reflect.Type;
-import java.net.URI;
 import java.time.OffsetDateTime;
 import java.util.Base64;
 import java.util.Collections;
@@ -24,7 +23,7 @@ import io.quarkus.funqy.knative.events.CloudEvent;
 class JsonCloudEventImpl<T> extends AbstractCloudEvent<T> implements CloudEvent<T> {
     String id;
     String specVersion;
-    URI source;
+    String source;
     String type;
 
     String dataContentType;
@@ -70,9 +69,9 @@ class JsonCloudEventImpl<T> extends AbstractCloudEvent<T> implements CloudEvent<
     }
 
     @Override
-    public URI source() {
+    public String source() {
         if (source == null && event.has("source")) {
-            this.source = URI.create(event.get("source").asText());
+            this.source = event.get("source").asText();
         }
 
         return source;

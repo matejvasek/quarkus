@@ -10,7 +10,6 @@ import static io.quarkus.funqy.runtime.bindings.knative.events.KnativeEventsBind
 import java.io.IOException;
 import java.io.InputStream;
 import java.lang.reflect.Type;
-import java.net.URI;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
@@ -202,7 +201,7 @@ public class VertxRequestHandler implements Handler<RoutingContext> {
                                     .specVersion("1.0")
                                     .id(getResponseId())
                                     .type(type)
-                                    .source(URI.create(source))
+                                    .source(source)
                                     .dataContentType(
                                             byte[].class.equals(innerOutputType) ? "application/octet-stream"
                                                     : "application/json")
