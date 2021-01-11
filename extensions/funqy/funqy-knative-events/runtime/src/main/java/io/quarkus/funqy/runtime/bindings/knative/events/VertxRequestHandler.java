@@ -199,15 +199,15 @@ public class VertxRequestHandler implements Handler<RoutingContext> {
                             String type = (String) invoker.getBindingContext().get(RESPONSE_TYPE);
                             String source = (String) invoker.getBindingContext().get(RESPONSE_SOURCE);
                             outputCloudEvent = CloudEventBuilder.create()
-                                    .setSpecVersion("1.0")
-                                    .setId(getResponseId())
-                                    .setType(type)
-                                    .setSource(URI.create(source))
-                                    .setDataContentType(
+                                    .specVersion("1.0")
+                                    .id(getResponseId())
+                                    .type(type)
+                                    .source(URI.create(source))
+                                    .dataContentType(
                                             byte[].class.equals(innerOutputType) ? "application/octet-stream"
                                                     : "application/json")
-                                    .setExtensions(Collections.emptyMap())
-                                    .setData(output)
+                                    .extensions(Collections.emptyMap())
+                                    .data(output)
                                     .build();
                         } else {
                             // user is explicitly returning CloudEvent

@@ -32,12 +32,12 @@ public class ExposedCloudEvents {
 
         TestBean inBean = event.data();
         return CloudEventBuilder.<TestBean> create()
-                .setSpecVersion("1.0")
-                .setId("double-it-id")
-                .setType("double-it-type")
-                .setSource(URI.create("/OfDoubleIt"))
-                .setDataContentType("application/json")
-                .setData(new TestBean(inBean.getI() * 2, inBean.getS() + inBean.getS()))
+                .specVersion("1.0")
+                .id("double-it-id")
+                .type("double-it-type")
+                .source(URI.create("/OfDoubleIt"))
+                .dataContentType("application/json")
+                .data(new TestBean(inBean.getI() * 2, inBean.getS() + inBean.getS()))
                 .build();
     }
 

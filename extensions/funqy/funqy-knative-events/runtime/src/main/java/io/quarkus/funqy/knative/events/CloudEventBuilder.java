@@ -24,47 +24,47 @@ public class CloudEventBuilder<T> {
         return new CloudEventBuilder<>();
     }
 
-    public CloudEventBuilder<T> setSpecVersion(String specVersion) {
+    public CloudEventBuilder<T> specVersion(String specVersion) {
         this.specVersion = specVersion;
         return this;
     }
 
-    public CloudEventBuilder<T> setId(String id) {
+    public CloudEventBuilder<T> id(String id) {
         this.id = id;
         return this;
     }
 
-    public CloudEventBuilder<T> setType(String type) {
+    public CloudEventBuilder<T> type(String type) {
         this.type = type;
         return this;
     }
 
-    public CloudEventBuilder<T> setSource(URI source) {
+    public CloudEventBuilder<T> source(URI source) {
         this.source = source;
         return this;
     }
 
-    public CloudEventBuilder<T> setDataContentType(String dataContentType) {
+    public CloudEventBuilder<T> dataContentType(String dataContentType) {
         this.dataContentType = dataContentType;
         return this;
     }
 
-    public CloudEventBuilder<T> setData(T data) {
+    public CloudEventBuilder<T> data(T data) {
         this.data = data;
         return this;
     }
 
-    public CloudEventBuilder<T> setSubject(String subject) {
+    public CloudEventBuilder<T> subject(String subject) {
         this.subject = subject;
         return this;
     }
 
-    public CloudEventBuilder<T> setTime(OffsetDateTime time) {
+    public CloudEventBuilder<T> time(OffsetDateTime time) {
         this.time = time;
         return this;
     }
 
-    public CloudEventBuilder<T> setExtensions(Map<String, String> extensions) {
+    public CloudEventBuilder<T> extensions(Map<String, String> extensions) {
         this.extensions = extensions;
         return this;
     }
