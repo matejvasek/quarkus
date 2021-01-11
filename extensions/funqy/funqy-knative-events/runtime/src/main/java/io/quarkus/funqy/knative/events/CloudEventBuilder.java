@@ -3,7 +3,6 @@ package io.quarkus.funqy.knative.events;
 import java.net.URI;
 import java.time.OffsetDateTime;
 import java.util.Collections;
-import java.util.Iterator;
 import java.util.Map;
 import java.util.Objects;
 
@@ -138,8 +137,8 @@ public class CloudEventBuilder<T> {
         }
 
         @Override
-        public Iterator<Map.Entry<String, String>> extensions() {
-            return extensions.entrySet().iterator();
+        public Map<String, String> extensions() {
+            return extensions;
         }
 
         @Override

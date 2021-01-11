@@ -5,15 +5,12 @@ import java.io.UncheckedIOException;
 import java.lang.reflect.Type;
 import java.net.URI;
 import java.time.OffsetDateTime;
-import java.util.AbstractMap;
 import java.util.Base64;
 import java.util.Collections;
-import java.util.Iterator;
 import java.util.Map;
 import java.util.Set;
-import java.util.Spliterators;
+import java.util.TreeMap;
 import java.util.TreeSet;
-import java.util.stream.StreamSupport;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonNode;
@@ -34,6 +31,8 @@ class JsonCloudEventImpl<T> extends AbstractCloudEvent<T> implements CloudEvent<
     T data;
     String subject;
     OffsetDateTime time;
+
+    Map<String, String> extensions;
 
     final JsonNode event;
     final ObjectMapper mapper;
@@ -134,12 +133,19 @@ class JsonCloudEventImpl<T> extends AbstractCloudEvent<T> implements CloudEvent<
     }
 
     @Override
-    public Iterator<Map.Entry<String, String>> extensions() {
-        return StreamSupport.stream(Spliterators.spliterator(event.fields(), event.size(), 0x0), false)
-                .filter(entry -> !reservedAttributes.contains(entry.getKey()))
-                .map(entry -> (Map.Entry<String, String>) new AbstractMap.SimpleImmutableEntry<>(entry.getKey(),
-                        entry.getValue().asText()))
-                .iterator();
+    public Map<String, String> extensions() {
+
+        if (extensions == null) {
+            extensions = new TreeMap<>(String.CASE_INSENSITIVE_ORDER);
+            event.fields().forEachRemaining(e -> {
+                if (!reservedAttributes.contains(e.getKey())) {
+                    extensions.put(e.getKey(), e.getValue().textValue());
+                }
+            });
+            extensions = Collections.unmodifiableMap(extensions);
+        }
+
+        return extensions;
     }
 
     @Override

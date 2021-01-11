@@ -6,9 +6,9 @@ import java.lang.reflect.Type;
 import java.net.URI;
 import java.time.OffsetDateTime;
 import java.util.Collections;
-import java.util.Iterator;
 import java.util.Map;
 import java.util.Set;
+import java.util.TreeMap;
 import java.util.TreeSet;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -29,6 +29,7 @@ class HeaderCloudEventImpl<T> extends AbstractCloudEvent<T> implements CloudEven
     T data;
     String subject;
     OffsetDateTime time;
+
     Map<String, String> extensions;
 
     final MultiMap headers;
@@ -129,11 +130,17 @@ class HeaderCloudEventImpl<T> extends AbstractCloudEvent<T> implements CloudEven
     }
 
     @Override
-    public Iterator<Map.Entry<String, String>> extensions() {
-        return headers.entries()
-                .stream()
-                .filter(entry -> isCEHeader(entry.getKey()) && !reservedHeaders.contains(entry.getKey()))
-                .iterator();
+    public Map<String, String> extensions() {
+        if (extensions == null) {
+            extensions = new TreeMap<>(String.CASE_INSENSITIVE_ORDER);
+            for (Map.Entry<String, String> entry : headers) {
+                if (isCEHeader(entry.getKey()) && !reservedHeaders.contains(entry.getKey())) {
+                    extensions.put(entry.getKey(), entry.getValue());
+                }
+            }
+            extensions = Collections.unmodifiableMap(extensions);
+        }
+        return extensions;
     }
 
     @Override

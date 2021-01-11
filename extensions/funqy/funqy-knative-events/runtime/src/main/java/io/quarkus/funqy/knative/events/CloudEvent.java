@@ -2,7 +2,6 @@ package io.quarkus.funqy.knative.events;
 
 import java.net.URI;
 import java.time.OffsetDateTime;
-import java.util.Iterator;
 import java.util.Map;
 
 /**
@@ -23,7 +22,7 @@ public interface CloudEvent<T> {
 
     OffsetDateTime time();
 
-    Iterator<Map.Entry<String, String>> extensions();
+    Map<String, String> extensions();
 
     String dataContentType();
 
