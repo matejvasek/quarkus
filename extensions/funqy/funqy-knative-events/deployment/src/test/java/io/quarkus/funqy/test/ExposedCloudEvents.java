@@ -1,6 +1,7 @@
 package io.quarkus.funqy.test;
 
 import java.io.Serializable;
+import java.util.Collections;
 import java.util.Objects;
 
 import io.quarkus.funqy.Funq;
@@ -28,6 +29,8 @@ public class ExposedCloudEvents {
             throw new RuntimeException("Bad subject!");
         if (!event.dataSchema().equals("test-dataschema-client"))
             throw new RuntimeException("Bad dataschema!");
+        if (!event.extensions().equals(Collections.singletonMap("extclient", "ext-client-val")))
+            throw new RuntimeException("Bad extensions!");
         if (event.time() == null)
             throw new RuntimeException("Bad time!");
 
@@ -37,6 +40,7 @@ public class ExposedCloudEvents {
                 .id("double-it-id")
                 .type("double-it-type")
                 .source("/OfDoubleIt")
+                .extensions(Collections.singletonMap("extserver", "ext-server-val"))
                 .dataSchema("dataschema-server")
                 .build(new TestBean(inBean.getI() * 2, inBean.getS() + inBean.getS()));
     }

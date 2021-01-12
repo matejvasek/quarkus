@@ -129,6 +129,7 @@ class JsonCloudEventImpl<T> extends AbstractCloudEvent<T> implements CloudEvent<
 
         ra.add("dataschema");
 
+        ra.add("data");
         reservedAttributes = Collections.unmodifiableSet(ra);
     }
 

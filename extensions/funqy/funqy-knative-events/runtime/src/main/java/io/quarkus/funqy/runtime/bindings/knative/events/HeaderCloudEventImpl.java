@@ -135,7 +135,7 @@ class HeaderCloudEventImpl<T> extends AbstractCloudEvent<T> implements CloudEven
             extensions = new TreeMap<>(String.CASE_INSENSITIVE_ORDER);
             for (Map.Entry<String, String> entry : headers) {
                 if (isCEHeader(entry.getKey()) && !reservedHeaders.contains(entry.getKey())) {
-                    extensions.put(entry.getKey(), entry.getValue());
+                    extensions.put(entry.getKey().substring(3), entry.getValue());
                 }
             }
             extensions = Collections.unmodifiableMap(extensions);
