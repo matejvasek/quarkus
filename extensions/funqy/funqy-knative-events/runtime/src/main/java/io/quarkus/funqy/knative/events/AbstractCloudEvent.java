@@ -11,6 +11,7 @@ public abstract class AbstractCloudEvent<T> implements CloudEvent<T> {
                 ", subject='" + subject() + '\'' +
                 ", time=" + time() +
                 ", extensions=" + extensions() +
+                ", dataSchema=" + dataSchema() +
                 ", dataContentType='" + dataContentType() + '\'' +
                 ", data=" + data() +
                 '}';

@@ -11,6 +11,7 @@ public class CloudEventBuilder {
     private String source;
     private String subject;
     private OffsetDateTime time;
+    private String dataSchema;
     private Map<String, String> extensions;
 
     private CloudEventBuilder() {
@@ -50,6 +51,11 @@ public class CloudEventBuilder {
         return this;
     }
 
+    public CloudEventBuilder dataSchema(String dataSchema) {
+        this.dataSchema = dataSchema;
+        return this;
+    }
+
     public CloudEventBuilder extensions(Map<String, String> extensions) {
         this.extensions = extensions;
         return this;
@@ -57,15 +63,42 @@ public class CloudEventBuilder {
 
     public CloudEvent<byte[]> build(byte[] data, String dataContentType) {
 
-        return new SimpleCloudEvent(specVersion, id, type, source, dataContentType, data, subject, time, extensions);
+        return new SimpleCloudEvent(specVersion,
+                id,
+                type,
+                source,
+                subject,
+                time,
+                extensions,
+                dataSchema,
+                dataContentType,
+                data);
     }
 
     public <T> CloudEvent<T> build(T data) {
-        return new SimpleCloudEvent(specVersion, id, type, source, "application/json", data, subject, time, extensions);
+        return new SimpleCloudEvent(specVersion,
+                id,
+                type,
+                source,
+                subject,
+                time,
+                extensions,
+                dataSchema,
+                "application/json",
+                data);
     }
 
     public CloudEvent<Void> build() {
-        return new SimpleCloudEvent(specVersion, id, type, source, null, null, subject, time, extensions);
+        return new SimpleCloudEvent(specVersion,
+                id,
+                type,
+                source,
+                subject,
+                time,
+                extensions,
+                dataSchema,
+                null,
+                null);
     }
 
     private static final class SimpleCloudEvent<T> extends AbstractCloudEvent<T> implements CloudEvent<T> {
@@ -73,21 +106,23 @@ public class CloudEventBuilder {
         private final String id;
         private final String type;
         private final String source;
-        private final String dataContentType;
-        private final T data;
         private final String subject;
         private final OffsetDateTime time;
         private final Map<String, String> extensions;
+        private final String dataSchema;
+        private final String dataContentType;
+        private final T data;
 
         SimpleCloudEvent(String specVersion,
                 String id,
                 String type,
                 String source,
-                String dataContentType,
-                T data,
                 String subject,
                 OffsetDateTime time,
-                Map<String, String> extensions) {
+                Map<String, String> extensions,
+                String dataSchema,
+                String dataContentType,
+                T data) {
 
             if (extensions == null) {
                 this.extensions = Collections.emptyMap();
@@ -99,10 +134,11 @@ public class CloudEventBuilder {
             this.id = id;
             this.type = type;
             this.source = source;
-            this.dataContentType = dataContentType;
-            this.data = data;
             this.subject = subject;
             this.time = time;
+            this.dataSchema = dataSchema;
+            this.dataContentType = dataContentType;
+            this.data = data;
         }
 
         @Override
@@ -133,6 +169,11 @@ public class CloudEventBuilder {
         @Override
         public OffsetDateTime time() {
             return time;
+        }
+
+        @Override
+        public String dataSchema() {
+            return dataSchema;
         }
 
         @Override

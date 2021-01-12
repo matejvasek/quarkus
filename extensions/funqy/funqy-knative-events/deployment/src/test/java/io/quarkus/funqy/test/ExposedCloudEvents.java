@@ -26,6 +26,8 @@ public class ExposedCloudEvents {
             throw new RuntimeException("Bad type!");
         if (!event.subject().equals("test-subj"))
             throw new RuntimeException("Bad subject!");
+        if (!event.dataSchema().equals("test-dataschema-client"))
+            throw new RuntimeException("Bad dataschema!");
         if (event.time() == null)
             throw new RuntimeException("Bad time!");
 
@@ -35,6 +37,7 @@ public class ExposedCloudEvents {
                 .id("double-it-id")
                 .type("double-it-type")
                 .source("/OfDoubleIt")
+                .dataSchema("dataschema-server")
                 .build(new TestBean(inBean.getI() * 2, inBean.getS() + inBean.getS()));
     }
 

@@ -23,6 +23,8 @@ public interface CloudEvent<T> {
 
     Map<String, String> extensions();
 
+    String dataSchema();
+
     String dataContentType();
 
     T data();

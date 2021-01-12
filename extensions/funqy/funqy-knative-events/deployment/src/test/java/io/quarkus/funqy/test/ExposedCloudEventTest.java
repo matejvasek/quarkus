@@ -24,6 +24,7 @@ public class ExposedCloudEventTest {
                 .header("ce-type", "test-type")
                 .header("ce-source", "/OfTest")
                 .header("ce-subject", "test-subj")
+                .header("ce-dataschema", "test-dataschema-client")
                 .header("ce-time", "2018-04-05T17:31:00Z")
                 .body(" { \"i\" : 21, \"s\" : \"abc\" } ")
                 .post("/")
@@ -32,6 +33,7 @@ public class ExposedCloudEventTest {
                 .header("ce-id", equalTo("double-it-id"))
                 .header("ce-type", equalTo("double-it-type"))
                 .header("ce-source", equalTo("/OfDoubleIt"))
+                .header("ce-dataschema", equalTo("dataschema-server"))
                 .body("i", equalTo(42))
                 .body("s", equalTo("abcabc"))
                 .statusCode(200);
@@ -43,6 +45,7 @@ public class ExposedCloudEventTest {
             "  \"subject\": \"test-subj\", " +
             "  \"time\": \"2018-04-05T17:31:00Z\", " +
             "  \"type\": \"test-type\", " +
+            "  \"dataschema\": \"test-dataschema-client\", " +
             "  \"datacontenttype\": \"application/json\", " +
             "  \"data\": { \"i\" : 21, \"s\" : \"abc\" } " +
             "}";
@@ -57,6 +60,7 @@ public class ExposedCloudEventTest {
                 .body("id", equalTo("double-it-id"))
                 .body("type", equalTo("double-it-type"))
                 .body("source", equalTo("/OfDoubleIt"))
+                .body("dataschema", equalTo("dataschema-server"))
                 .body("data.i", equalTo(42))
                 .body("data.s", equalTo("abcabc"))
                 .statusCode(200);

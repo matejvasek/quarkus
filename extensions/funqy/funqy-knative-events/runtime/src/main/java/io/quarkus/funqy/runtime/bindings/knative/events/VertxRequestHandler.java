@@ -228,6 +228,10 @@ public class VertxRequestHandler implements Handler<RoutingContext> {
                                 httpResponse.putHeader("ce-subject", outputCloudEvent.subject());
                             }
 
+                            if (outputCloudEvent.dataSchema() != null) {
+                                httpResponse.putHeader("ce-dataschema", outputCloudEvent.dataSchema());
+                            }
+
                             outputCloudEvent.extensions()
                                     .entrySet()
                                     .forEach(e -> httpResponse.putHeader("ce-" + e.getKey(), e.getValue()));
@@ -260,6 +264,10 @@ public class VertxRequestHandler implements Handler<RoutingContext> {
 
                             if (outputCloudEvent.subject() != null) {
                                 responseEvent.put("subject", outputCloudEvent.subject());
+                            }
+
+                            if (outputCloudEvent.dataSchema() != null) {
+                                responseEvent.put("dataschema", outputCloudEvent.dataSchema());
                             }
 
                             outputCloudEvent.extensions()

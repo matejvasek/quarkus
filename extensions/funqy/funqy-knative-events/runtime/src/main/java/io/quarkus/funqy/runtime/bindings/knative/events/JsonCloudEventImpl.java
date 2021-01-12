@@ -26,12 +26,13 @@ class JsonCloudEventImpl<T> extends AbstractCloudEvent<T> implements CloudEvent<
     String source;
     String type;
 
-    String dataContentType;
-    T data;
     String subject;
     OffsetDateTime time;
-
     Map<String, String> extensions;
+
+    String dataSchema;
+    String dataContentType;
+    T data;
 
     final JsonNode event;
     final ObjectMapper mapper;
@@ -145,6 +146,18 @@ class JsonCloudEventImpl<T> extends AbstractCloudEvent<T> implements CloudEvent<
         }
 
         return extensions;
+    }
+
+    @Override
+    public String dataSchema() {
+        if (dataSchema == null) {
+            JsonNode dataSchema = event.get("dataschema");
+            if (dataSchema != null) {
+                this.dataSchema = dataSchema.asText();
+            }
+        }
+
+        return dataSchema;
     }
 
     @Override

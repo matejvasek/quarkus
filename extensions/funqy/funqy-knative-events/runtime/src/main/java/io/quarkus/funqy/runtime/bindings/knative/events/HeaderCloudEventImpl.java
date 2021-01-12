@@ -24,12 +24,13 @@ class HeaderCloudEventImpl<T> extends AbstractCloudEvent<T> implements CloudEven
     String source;
     String type;
 
-    String dataContentType;
-    T data;
     String subject;
     OffsetDateTime time;
-
     Map<String, String> extensions;
+
+    String dataSchema;
+    String dataContentType;
+    T data;
 
     final MultiMap headers;
     final Buffer buffer;
@@ -140,6 +141,14 @@ class HeaderCloudEventImpl<T> extends AbstractCloudEvent<T> implements CloudEven
             extensions = Collections.unmodifiableMap(extensions);
         }
         return extensions;
+    }
+
+    @Override
+    public String dataSchema() {
+        if (dataSchema == null) {
+            dataSchema = headers.get("ce-dataschema");
+        }
+        return dataSchema;
     }
 
     @Override
