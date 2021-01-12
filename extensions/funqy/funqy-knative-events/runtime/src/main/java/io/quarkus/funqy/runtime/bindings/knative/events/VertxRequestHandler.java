@@ -197,17 +197,18 @@ public class VertxRequestHandler implements Handler<RoutingContext> {
                             // we need to wrap user data into CloudEvent
                             String type = (String) invoker.getBindingContext().get(RESPONSE_TYPE);
                             String source = (String) invoker.getBindingContext().get(RESPONSE_SOURCE);
-                            outputCloudEvent = CloudEventBuilder.create()
+                            CloudEventBuilder builder = CloudEventBuilder.create()
                                     .specVersion("1.0")
                                     .id(getResponseId())
                                     .type(type)
                                     .source(source)
-                                    .dataContentType(
-                                            byte[].class.equals(innerOutputType) ? "application/octet-stream"
-                                                    : "application/json")
-                                    .extensions(Collections.emptyMap())
-                                    .data(output)
-                                    .build();
+                                    .extensions(Collections.emptyMap());
+
+                            if (byte[].class.equals(innerOutputType)) {
+                                outputCloudEvent = builder.build((byte[]) output, "application/octet-stream");
+                            } else {
+                                outputCloudEvent = builder.build(output);
+                            }
                         } else {
                             // user is explicitly returning CloudEvent
                             outputCloudEvent = (CloudEvent<?>) output;

@@ -35,9 +35,7 @@ public class ExposedCloudEvents {
                 .id("double-it-id")
                 .type("double-it-type")
                 .source("/OfDoubleIt")
-                .dataContentType("application/json")
-                .data(new TestBean(inBean.getI() * 2, inBean.getS() + inBean.getS()))
-                .build();
+                .build(new TestBean(inBean.getI() * 2, inBean.getS() + inBean.getS()));
     }
 
     public static class TestBean implements Serializable {
