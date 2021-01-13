@@ -1,6 +1,7 @@
 package io.quarkus.funqy.test;
 
 import static org.hamcrest.Matchers.equalTo;
+import static org.hamcrest.Matchers.notNullValue;
 
 import java.util.Collections;
 import java.util.HashMap;
@@ -33,6 +34,24 @@ public class ExposedCloudEventTest {
                 .post("/doubleIt")
                 .then()
                 .statusCode(400);
+    }
+
+    @Test
+    public void testCloudEventAttributeDefaults() {
+        String event = "{ \"id\" : \"test-id\", " +
+                "  \"specversion\": \"1.0\", " +
+                "  \"subject\": \"test-subj\", " +
+                "  \"time\": \"2018-04-05T17:31:00Z\", " +
+                "  \"type\": \"test-defaults\" " +
+                "}";
+        RestAssured.given().contentType("application/cloudevents+json")
+                .body(event)
+                .post("/")
+                .then()
+                .body("specversion", equalTo("1.0"))
+                .body("id", notNullValue())
+                .body("type", equalTo("default-type"))
+                .body("source", equalTo("default-source"));
     }
 
     @ParameterizedTest

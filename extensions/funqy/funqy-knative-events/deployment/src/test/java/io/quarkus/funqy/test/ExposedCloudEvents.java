@@ -43,6 +43,12 @@ public class ExposedCloudEvents {
                 .build(new TestBean(inBean.getI() * 2, inBean.getS() + inBean.getS()));
     }
 
+    @Funq
+    @CloudEventMapping(trigger = "test-defaults", responseSource = "default-source", responseType = "default-type")
+    public CloudEvent<Void> withDefaults(CloudEvent<Void> event) {
+        return CloudEventBuilder.create().build();
+    }
+
     public static class TestBean implements Serializable {
         private int i;
         private String s;

@@ -10,7 +10,6 @@ import static io.quarkus.funqy.runtime.bindings.knative.events.KnativeEventsBind
 import java.io.IOException;
 import java.io.InputStream;
 import java.lang.reflect.Type;
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.UUID;
@@ -206,12 +205,7 @@ public class VertxRequestHandler implements Handler<RoutingContext> {
                             // we need to wrap user data into CloudEvent
                             String type = (String) invoker.getBindingContext().get(RESPONSE_TYPE);
                             String source = (String) invoker.getBindingContext().get(RESPONSE_SOURCE);
-                            CloudEventBuilder builder = CloudEventBuilder.create()
-                                    .specVersion(CloudEvent.SpecVersion.V1)
-                                    .id(getResponseId())
-                                    .type(type)
-                                    .source(source)
-                                    .extensions(Collections.emptyMap());
+                            CloudEventBuilder builder = CloudEventBuilder.create();
 
                             if (byte[].class.equals(innerOutputType)) {
                                 outputCloudEvent = builder.build((byte[]) output, "application/octet-stream");
@@ -223,11 +217,30 @@ public class VertxRequestHandler implements Handler<RoutingContext> {
                             outputCloudEvent = (CloudEvent<?>) output;
                         }
 
+                        String id = outputCloudEvent.id();
+                        if (id == null) {
+                            id = getResponseId();
+                        }
+                        String specVersion;
+                        if (outputCloudEvent.specVersion() == null) {
+                            specVersion = inputCloudEvent.specVersion().toString();
+                        } else {
+                            specVersion = outputCloudEvent.specVersion().toString();
+                        }
+                        String source = outputCloudEvent.source();
+                        if (source == null) {
+                            source = (String) invoker.getBindingContext().get(RESPONSE_SOURCE);
+                        }
+                        String type = outputCloudEvent.type();
+                        if (type == null) {
+                            type = (String) invoker.getBindingContext().get(RESPONSE_TYPE);
+                        }
+
                         if (binaryCE) {
-                            httpResponse.putHeader("ce-id", outputCloudEvent.id());
-                            httpResponse.putHeader("ce-specversion", outputCloudEvent.specVersion().toString());
-                            httpResponse.putHeader("ce-source", outputCloudEvent.source().toString());
-                            httpResponse.putHeader("ce-type", outputCloudEvent.type());
+                            httpResponse.putHeader("ce-id", id);
+                            httpResponse.putHeader("ce-specversion", specVersion);
+                            httpResponse.putHeader("ce-source", source);
+                            httpResponse.putHeader("ce-type", type);
 
                             if (outputCloudEvent.time() != null) {
                                 httpResponse.putHeader("ce-time", outputCloudEvent.time().toString());
@@ -264,10 +277,10 @@ public class VertxRequestHandler implements Handler<RoutingContext> {
 
                         } else {
                             final Map<String, Object> responseEvent = new HashMap<>();
-                            responseEvent.put("id", outputCloudEvent.id());
-                            responseEvent.put("specversion", outputCloudEvent.specVersion().toString());
-                            responseEvent.put("source", outputCloudEvent.source());
-                            responseEvent.put("type", outputCloudEvent.type());
+                            responseEvent.put("id", id);
+                            responseEvent.put("specversion", specVersion);
+                            responseEvent.put("source", source);
+                            responseEvent.put("type", type);
 
                             if (outputCloudEvent.time() != null) {
                                 responseEvent.put("time", outputCloudEvent.time());
