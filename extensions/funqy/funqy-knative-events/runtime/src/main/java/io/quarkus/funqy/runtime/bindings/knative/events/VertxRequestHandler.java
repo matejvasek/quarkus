@@ -313,15 +313,37 @@ public class VertxRequestHandler implements Handler<RoutingContext> {
                             }
 
                             if (ceHasData) {
-                                if (dataContentType != null && dataContentType.startsWith("application/json")) {
-                                    responseEvent.put("data", outputCloudEvent.data());
-                                } else if (byte[].class.equals(innerOutputType)) {
-                                    responseEvent.put("data_base64", (byte[]) outputCloudEvent.data());
-                                } else {
-                                    log.errorf("Don't know how to write ce to output (dataContentType: %s, javaType: %s).",
-                                            dataContentType, innerOutputType);
-                                    routingContext.fail(500);
-                                    return;
+                                switch (specVersion) {
+                                    case "1.0":
+                                        if (dataContentType != null && dataContentType.startsWith("application/json")) {
+                                            responseEvent.put("data", outputCloudEvent.data());
+                                        } else if (byte[].class.equals(innerOutputType)) {
+                                            responseEvent.put("data_base64", (byte[]) outputCloudEvent.data());
+                                        } else {
+                                            log.errorf(
+                                                    "Don't know how to write ce to output (dataContentType: %s, javaType: %s).",
+                                                    dataContentType, innerOutputType);
+                                            routingContext.fail(500);
+                                            return;
+                                        }
+                                        break;
+                                    case "0.3":
+                                        if (dataContentType != null && dataContentType.startsWith("application/json")) {
+                                            responseEvent.put("data", outputCloudEvent.data());
+                                        } else if (byte[].class.equals(innerOutputType)) {
+                                            responseEvent.put("datacontentencoding", "base64");
+                                            responseEvent.put("data", (byte[]) outputCloudEvent.data());
+                                        } else {
+                                            log.errorf(
+                                                    "Don't know how to write ce to output (dataContentType: %s, javaType: %s).",
+                                                    dataContentType, innerOutputType);
+                                            routingContext.fail(500);
+                                            return;
+                                        }
+                                        break;
+                                    default:
+                                        throw new RuntimeException(
+                                                "Unsupported CloudEvent spec-version: '" + specVersion + "'.");
                                 }
                             }
 
