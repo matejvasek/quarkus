@@ -17,8 +17,6 @@ public class ExposedCloudEvents {
 
         if (event == null)
             throw new RuntimeException("Event is null!");
-        if (!event.specVersion().equals(CloudEvent.SpecVersion.V1))
-            throw new RuntimeException("Bad specversion!");
         if (!event.id().equals("test-id"))
             throw new RuntimeException("Bad id!");
         if (!event.source().toString().equals("/OfTest"))
@@ -35,8 +33,8 @@ public class ExposedCloudEvents {
             throw new RuntimeException("Bad time!");
 
         TestBean inBean = event.data();
-        return CloudEventBuilder.<TestBean> create()
-                .specVersion(CloudEvent.SpecVersion.V1)
+        return CloudEventBuilder.create()
+                .specVersion(event.specVersion())
                 .id("double-it-id")
                 .type("double-it-type")
                 .source("/OfDoubleIt")
