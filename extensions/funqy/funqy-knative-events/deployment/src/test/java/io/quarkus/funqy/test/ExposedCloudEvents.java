@@ -19,7 +19,7 @@ public class ExposedCloudEvents {
             throw new RuntimeException("Event is null!");
         if (!event.id().equals("test-id"))
             throw new RuntimeException("Bad id!");
-        if (!event.source().toString().equals("/OfTest"))
+        if (!event.source().equals("/OfTest"))
             throw new RuntimeException("Bad source!");
         if (!event.type().equals("test-type"))
             throw new RuntimeException("Bad type!");

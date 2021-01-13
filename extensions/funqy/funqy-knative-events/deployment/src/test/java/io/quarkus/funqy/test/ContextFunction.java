@@ -16,7 +16,7 @@ public class ContextFunction {
             throw new RuntimeException();
         if (!event.subject().equals("bb"))
             throw new RuntimeException();
-        if (!event.source().toString().equals("test"))
+        if (!event.source().equals("test"))
             throw new RuntimeException();
         if (event.time() == null)
             throw new RuntimeException();
