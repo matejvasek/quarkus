@@ -10,7 +10,7 @@ public class ContextFunction {
     public void context(String body, @Context CloudEvent event) {
         if (event == null)
             throw new RuntimeException();
-        if (!event.specVersion().equals("1.0"))
+        if (!event.specVersion().equals(CloudEvent.SpecVersion.V1))
             throw new RuntimeException();
         if (!event.id().equals("1234"))
             throw new RuntimeException();

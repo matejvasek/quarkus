@@ -20,7 +20,7 @@ import io.vertx.core.buffer.Buffer;
 
 class HeaderCloudEventImpl<T> extends AbstractCloudEvent<T> implements CloudEvent<T> {
     String id;
-    String specVersion;
+    CloudEvent.SpecVersion specVersion;
     String source;
     String type;
 
@@ -56,9 +56,9 @@ class HeaderCloudEventImpl<T> extends AbstractCloudEvent<T> implements CloudEven
     }
 
     @Override
-    public String specVersion() {
+    public SpecVersion specVersion() {
         if (specVersion == null) {
-            specVersion = headers.get("ce-specversion");
+            this.specVersion = SpecVersion.fromString(headers.get("ce-specversion"));
         }
 
         return specVersion;
@@ -146,7 +146,8 @@ class HeaderCloudEventImpl<T> extends AbstractCloudEvent<T> implements CloudEven
     @Override
     public String dataSchema() {
         if (dataSchema == null) {
-            dataSchema = headers.get("ce-dataschema");
+            String dsName = specVersion() == CloudEvent.SpecVersion.V1 ? "ce-dataschema" : "ce-schemaurl";
+            dataSchema = headers.get(dsName);
         }
         return dataSchema;
     }

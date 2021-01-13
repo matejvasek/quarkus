@@ -22,7 +22,7 @@ import io.quarkus.funqy.knative.events.CloudEvent;
 
 class JsonCloudEventImpl<T> extends AbstractCloudEvent<T> implements CloudEvent<T> {
     String id;
-    String specVersion;
+    CloudEvent.SpecVersion specVersion;
     String source;
     String type;
 
@@ -59,11 +59,12 @@ class JsonCloudEventImpl<T> extends AbstractCloudEvent<T> implements CloudEvent<
     }
 
     @Override
-    public String specVersion() {
+    public SpecVersion specVersion() {
         if (specVersion == null) {
             JsonNode specVersion = event.get("specversion");
-            if (specVersion != null)
-                this.specVersion = specVersion.asText();
+            if (specVersion != null) {
+                this.specVersion = SpecVersion.fromString(specVersion.asText());
+            }
         }
 
         return specVersion;
@@ -126,10 +127,10 @@ class JsonCloudEventImpl<T> extends AbstractCloudEvent<T> implements CloudEvent<
 
         ra.add("datacontentencoding");
         ra.add("schemaurl");
-
         ra.add("dataschema");
 
         ra.add("data");
+
         reservedAttributes = Collections.unmodifiableSet(ra);
     }
 
@@ -152,7 +153,8 @@ class JsonCloudEventImpl<T> extends AbstractCloudEvent<T> implements CloudEvent<
     @Override
     public String dataSchema() {
         if (dataSchema == null) {
-            JsonNode dataSchema = event.get("dataschema");
+            String dsName = specVersion() == CloudEvent.SpecVersion.V1 ? "dataschema" : "schemaurl";
+            JsonNode dataSchema = event.get(dsName);
             if (dataSchema != null) {
                 this.dataSchema = dataSchema.asText();
             }
@@ -187,15 +189,42 @@ class JsonCloudEventImpl<T> extends AbstractCloudEvent<T> implements CloudEvent<
             }
         } else if (byte[].class.equals(dataType)) {
             try {
-                if (event.has("data")) {
-                    data = (T) mapper.writeValueAsBytes(event.get("data"));
-                    return data;
-                } else if (event.has("data_base64")) {
-                    String txt = event.get("data_base64").asText();
-                    data = (T) Base64.getDecoder().decode(txt);
-                    return data;
-                } else {
-                    return null;
+                switch (specVersion()) {
+                    case V03:
+                        boolean isBase64 = false;
+                        if (event.has("datacontentencoding")) {
+                            String dce = event.get("datacontentencoding").asText();
+                            if ("base64".equals(dce)) {
+                                isBase64 = true;
+                            } else {
+                                throw new RuntimeException("Cannot deserialize data for data-content-encoding: '" + dce + "'.");
+                            }
+                        }
+                        if (isBase64) {
+                            if (event.has("data")) {
+                                String txt = event.get("data").asText();
+                                data = (T) Base64.getDecoder().decode(txt);
+                                return data;
+                            }
+                        } else {
+                            if (event.has("data")) {
+                                data = (T) mapper.writeValueAsBytes(event.get("data"));
+                                return data;
+                            }
+                        }
+                    case V1:
+                        if (event.has("data")) {
+                            data = (T) mapper.writeValueAsBytes(event.get("data"));
+                            return data;
+                        } else if (event.has("data_base64")) {
+                            String txt = event.get("data_base64").asText();
+                            data = (T) Base64.getDecoder().decode(txt);
+                            return data;
+                        } else {
+                            return null;
+                        }
+                    default:
+                        throw new RuntimeException("Cannot deserialize data for spec-version: '" + specVersion() + "'.");
                 }
             } catch (JsonProcessingException e) {
                 throw new RuntimeException(e);

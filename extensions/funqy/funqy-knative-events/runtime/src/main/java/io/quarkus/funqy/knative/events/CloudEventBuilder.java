@@ -5,7 +5,7 @@ import java.util.Collections;
 import java.util.Map;
 
 public class CloudEventBuilder {
-    private String specVersion;
+    private CloudEvent.SpecVersion specVersion;
     private String id;
     private String type;
     private String source;
@@ -21,7 +21,7 @@ public class CloudEventBuilder {
         return new CloudEventBuilder();
     }
 
-    public CloudEventBuilder specVersion(String specVersion) {
+    public CloudEventBuilder specVersion(CloudEvent.SpecVersion specVersion) {
         this.specVersion = specVersion;
         return this;
     }
@@ -102,7 +102,7 @@ public class CloudEventBuilder {
     }
 
     private static final class SimpleCloudEvent<T> extends AbstractCloudEvent<T> implements CloudEvent<T> {
-        private final String specVersion;
+        private final CloudEvent.SpecVersion specVersion;
         private final String id;
         private final String type;
         private final String source;
@@ -113,7 +113,7 @@ public class CloudEventBuilder {
         private final String dataContentType;
         private final T data;
 
-        SimpleCloudEvent(String specVersion,
+        SimpleCloudEvent(SpecVersion specVersion,
                 String id,
                 String type,
                 String source,
@@ -147,7 +147,7 @@ public class CloudEventBuilder {
         }
 
         @Override
-        public String specVersion() {
+        public SpecVersion specVersion() {
             return specVersion;
         }
 

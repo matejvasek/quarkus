@@ -122,19 +122,28 @@ public class VertxRequestHandler implements Handler<RoutingContext> {
         httpRequest.bodyHandler(bodyBuff -> executor.execute(() -> {
             try {
                 final String ceType;
+                final String ceSpecVersion;
                 final JsonNode structuredPayload;
 
                 if (binaryCE) {
                     ceType = httpRequest.headers().get("ce-type");
+                    ceSpecVersion = httpRequest.headers().get("ce-specversion");
                     structuredPayload = null;
                 } else {
                     try {
                         structuredPayload = mapper.readTree(bodyBuff.getBytes());
                         ceType = structuredPayload.get("type").asText();
+                        ceSpecVersion = structuredPayload.get("specversion").asText();
                     } catch (IOException e) {
                         routingContext.fail(e);
                         return;
                     }
+                }
+
+                if (!"1.0".equals(ceSpecVersion) && !"0.3".equals(ceSpecVersion)) {
+                    log.errorf("Unexpected CloudEvent spec-version '%s'.", ceSpecVersion);
+                    routingContext.fail(400);
+                    return;
                 }
 
                 final FunctionInvoker invoker;
@@ -198,7 +207,7 @@ public class VertxRequestHandler implements Handler<RoutingContext> {
                             String type = (String) invoker.getBindingContext().get(RESPONSE_TYPE);
                             String source = (String) invoker.getBindingContext().get(RESPONSE_SOURCE);
                             CloudEventBuilder builder = CloudEventBuilder.create()
-                                    .specVersion("1.0")
+                                    .specVersion(CloudEvent.SpecVersion.V1)
                                     .id(getResponseId())
                                     .type(type)
                                     .source(source)
@@ -216,7 +225,7 @@ public class VertxRequestHandler implements Handler<RoutingContext> {
 
                         if (binaryCE) {
                             httpResponse.putHeader("ce-id", outputCloudEvent.id());
-                            httpResponse.putHeader("ce-specversion", outputCloudEvent.specVersion());
+                            httpResponse.putHeader("ce-specversion", outputCloudEvent.specVersion().toString());
                             httpResponse.putHeader("ce-source", outputCloudEvent.source().toString());
                             httpResponse.putHeader("ce-type", outputCloudEvent.type());
 
@@ -229,7 +238,9 @@ public class VertxRequestHandler implements Handler<RoutingContext> {
                             }
 
                             if (outputCloudEvent.dataSchema() != null) {
-                                httpResponse.putHeader("ce-dataschema", outputCloudEvent.dataSchema());
+                                String dsName = outputCloudEvent.specVersion() == CloudEvent.SpecVersion.V1 ? "ce-dataschema"
+                                        : "ce-schemaurl";
+                                httpResponse.putHeader(dsName, outputCloudEvent.dataSchema());
                             }
 
                             outputCloudEvent.extensions()
@@ -254,7 +265,7 @@ public class VertxRequestHandler implements Handler<RoutingContext> {
                         } else {
                             final Map<String, Object> responseEvent = new HashMap<>();
                             responseEvent.put("id", outputCloudEvent.id());
-                            responseEvent.put("specversion", outputCloudEvent.specVersion());
+                            responseEvent.put("specversion", outputCloudEvent.specVersion().toString());
                             responseEvent.put("source", outputCloudEvent.source());
                             responseEvent.put("type", outputCloudEvent.type());
 
@@ -267,7 +278,9 @@ public class VertxRequestHandler implements Handler<RoutingContext> {
                             }
 
                             if (outputCloudEvent.dataSchema() != null) {
-                                responseEvent.put("dataschema", outputCloudEvent.dataSchema());
+                                String dsName = outputCloudEvent.specVersion() == CloudEvent.SpecVersion.V1 ? "dataschema"
+                                        : "schemaurl";
+                                responseEvent.put(dsName, outputCloudEvent.dataSchema());
                             }
 
                             outputCloudEvent.extensions()
