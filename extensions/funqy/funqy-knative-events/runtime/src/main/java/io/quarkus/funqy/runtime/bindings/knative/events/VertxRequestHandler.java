@@ -236,6 +236,8 @@ public class VertxRequestHandler implements Handler<RoutingContext> {
                             type = (String) invoker.getBindingContext().get(RESPONSE_TYPE);
                         }
 
+                        boolean ceHasData = !Void.class.equals(innerInputType);
+
                         if (binaryCE) {
                             httpResponse.putHeader("ce-id", id);
                             httpResponse.putHeader("ce-specversion", specVersion);
@@ -265,14 +267,19 @@ public class VertxRequestHandler implements Handler<RoutingContext> {
                                 httpResponse.putHeader("Content-Type", dataContentType);
 
                             }
-                            if (dataContentType != null && dataContentType.startsWith("application/json")) {
-                                httpResponse.end(Buffer.buffer(writer.writeValueAsBytes(outputCloudEvent.data())));
-                            } else if (byte[].class.equals(innerOutputType)) {
-                                httpResponse.end(Buffer.buffer((byte[]) outputCloudEvent.data()));
+
+                            if (ceHasData) {
+                                if (dataContentType != null && dataContentType.startsWith("application/json")) {
+                                    httpResponse.end(Buffer.buffer(writer.writeValueAsBytes(outputCloudEvent.data())));
+                                } else if (byte[].class.equals(innerOutputType)) {
+                                    httpResponse.end(Buffer.buffer((byte[]) outputCloudEvent.data()));
+                                } else {
+                                    log.errorf("Don't know how to write ce to output (dataContentType: %s, javaType: %s).",
+                                            dataContentType, innerOutputType);
+                                    routingContext.fail(500);
+                                }
                             } else {
-                                log.errorf("don't know how to write ce to output (dataContentType: %s, javaType: %s)",
-                                        dataContentType, innerOutputType);
-                                routingContext.fail(500);
+                                routingContext.response().setStatusCode(204);
                             }
 
                         } else {
@@ -304,15 +311,18 @@ public class VertxRequestHandler implements Handler<RoutingContext> {
                             if (dataContentType != null) {
                                 responseEvent.put("datacontenttype", dataContentType);
                             }
-                            if (dataContentType != null && dataContentType.startsWith("application/json")) {
-                                responseEvent.put("data", outputCloudEvent.data());
-                            } else if (byte[].class.equals(innerOutputType)) {
-                                responseEvent.put("data_base64", (byte[]) outputCloudEvent.data());
-                            } else {
-                                log.errorf("don't know how to write ce to output (dataContentType: %s, javaType: %s)",
-                                        dataContentType, innerOutputType);
-                                routingContext.fail(500);
-                                return;
+
+                            if (ceHasData) {
+                                if (dataContentType != null && dataContentType.startsWith("application/json")) {
+                                    responseEvent.put("data", outputCloudEvent.data());
+                                } else if (byte[].class.equals(innerOutputType)) {
+                                    responseEvent.put("data_base64", (byte[]) outputCloudEvent.data());
+                                } else {
+                                    log.errorf("Don't know how to write ce to output (dataContentType: %s, javaType: %s).",
+                                            dataContentType, innerOutputType);
+                                    routingContext.fail(500);
+                                    return;
+                                }
                             }
 
                             routingContext.response().putHeader("Content-Type", "application/cloudevents+json");
