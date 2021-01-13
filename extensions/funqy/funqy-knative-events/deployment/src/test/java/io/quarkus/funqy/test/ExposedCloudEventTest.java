@@ -9,6 +9,7 @@ import java.util.stream.Stream;
 
 import org.jboss.shrinkwrap.api.ShrinkWrap;
 import org.jboss.shrinkwrap.api.spec.JavaArchive;
+import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
@@ -23,6 +24,16 @@ public class ExposedCloudEventTest {
     static QuarkusUnitTest test = new QuarkusUnitTest()
             .setArchiveProducer(() -> ShrinkWrap.create(JavaArchive.class)
                     .addClasses(ExposedCloudEvents.class));
+
+    @Test
+    public void testVanillaHttp() {
+        // when a function handles CloudEvent explicitly, vanilla HTTP is considered to be a bad request.
+        RestAssured.given().contentType("application/json")
+                .body("{}")
+                .post("/doubleIt")
+                .then()
+                .statusCode(400);
+    }
 
     @ParameterizedTest
     @MethodSource("provideBinaryEncodingTestArgs")

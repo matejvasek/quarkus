@@ -344,6 +344,12 @@ public class VertxRequestHandler implements Handler<RoutingContext> {
             invoker = defaultInvoker;
         }
 
+        if (invoker == null) {
+            routingContext.fail(404);
+            log.error("There is no function matching the path.");
+            return;
+        }
+
         if (invoker.getBindingContext().get(INPUT_CE_DATA_TYPE) != null ||
                 invoker.getBindingContext().get(OUTPUT_CE_DATA_TYPE) != null) {
             routingContext.fail(400);
