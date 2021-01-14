@@ -177,7 +177,7 @@ class HeaderCloudEventImpl<T> extends AbstractCloudEvent<T> implements CloudEven
             data = (T) buffer.getBytes();
             return data;
         } else {
-            String msg = String.format("don't know how to get event data (dataContentType: %s, javaType: %s)",
+            String msg = String.format("Don't know how to get event data (dataContentType: '%s', javaType: '%s').",
                     dataContentType(), dataType.getTypeName());
             throw new RuntimeException(msg);
         }

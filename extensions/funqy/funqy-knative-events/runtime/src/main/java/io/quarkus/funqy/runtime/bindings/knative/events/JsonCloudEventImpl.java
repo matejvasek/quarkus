@@ -94,8 +94,9 @@ class JsonCloudEventImpl<T> extends AbstractCloudEvent<T> implements CloudEvent<
     public String subject() {
         if (subject == null) {
             JsonNode subject = event.get("subject");
-            if (subject != null)
+            if (subject != null) {
                 this.subject = subject.asText();
+            }
         }
 
         return subject;
@@ -230,7 +231,7 @@ class JsonCloudEventImpl<T> extends AbstractCloudEvent<T> implements CloudEvent<
                 throw new RuntimeException(e);
             }
         } else {
-            String msg = String.format("don't know how to get event data (dataContentType: %s, javaType: %s)",
+            String msg = String.format("Don't know how to get event data (dataContentType: '%s', javaType: '%s').",
                     dataContentType(), dataType.getTypeName());
             throw new RuntimeException(msg);
         }
