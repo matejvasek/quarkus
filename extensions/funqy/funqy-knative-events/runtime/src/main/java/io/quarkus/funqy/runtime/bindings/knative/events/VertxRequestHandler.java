@@ -265,7 +265,6 @@ public class VertxRequestHandler implements Handler<RoutingContext> {
                             String dataContentType = outputCloudEvent.dataContentType();
                             if (dataContentType != null) {
                                 httpResponse.putHeader("Content-Type", dataContentType);
-
                             }
 
                             if (ceHasData) {
@@ -277,11 +276,13 @@ public class VertxRequestHandler implements Handler<RoutingContext> {
                                     log.errorf("Don't know how to write ce to output (dataContentType: %s, javaType: %s).",
                                             dataContentType, innerOutputType);
                                     routingContext.fail(500);
+                                    return;
                                 }
                             } else {
                                 routingContext.response().setStatusCode(204);
+                                routingContext.response().end();
                             }
-
+                            return;
                         } else {
                             final Map<String, Object> responseEvent = new HashMap<>();
                             responseEvent.put("id", id);
@@ -348,8 +349,8 @@ public class VertxRequestHandler implements Handler<RoutingContext> {
                             }
 
                             routingContext.response().putHeader("Content-Type", "application/cloudevents+json");
-
                             httpResponse.end(Buffer.buffer(mapper.writer().writeValueAsBytes(responseEvent)));
+                            return;
                         }
                     } catch (Throwable t) {
                         routingContext.fail(t);

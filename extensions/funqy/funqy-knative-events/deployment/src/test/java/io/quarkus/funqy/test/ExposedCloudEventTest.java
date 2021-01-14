@@ -37,21 +37,37 @@ public class ExposedCloudEventTest {
     }
 
     @Test
-    public void testCloudEventAttributeDefaults() {
+    public void testCloudEventAttributeDefaultsForStructuredEncoding() {
         String event = "{ \"id\" : \"test-id\", " +
                 "  \"specversion\": \"1.0\", " +
-                "  \"subject\": \"test-subj\", " +
-                "  \"time\": \"2018-04-05T17:31:00Z\", " +
+                "  \"source\": \"test-source\", " +
                 "  \"type\": \"test-defaults\" " +
                 "}";
         RestAssured.given().contentType("application/cloudevents+json")
                 .body(event)
                 .post("/")
                 .then()
+                .statusCode(200)
                 .body("specversion", equalTo("1.0"))
                 .body("id", notNullValue())
                 .body("type", equalTo("default-type"))
                 .body("source", equalTo("default-source"));
+    }
+
+    @Test
+    public void testCloudEventAttributeDefaultsForBinaryEncoding() {
+        RestAssured.given()
+                .header("ce-id", "test-id")
+                .header("ce-specversion", "1.0")
+                .header("ce-type", "test-defaults")
+                .header("ce-source", "test-source")
+                .post()
+                .then()
+                .statusCode(204)
+                .header("ce-specversion", equalTo("1.0"))
+                .header("ce-id", notNullValue())
+                .header("ce-type", equalTo("default-type"))
+                .header("ce-source", equalTo("default-source"));
     }
 
     @ParameterizedTest
@@ -67,6 +83,7 @@ public class ExposedCloudEventTest {
         req.body(BINARY_ENCODED_EVENT_BODY)
                 .post("/")
                 .then()
+                .statusCode(200)
                 .header("ce-specversion", equalTo(specversion))
                 .header("ce-id", equalTo("double-it-id"))
                 .header("ce-type", equalTo("double-it-type"))
@@ -74,8 +91,7 @@ public class ExposedCloudEventTest {
                 .header(dataSchemaHdrName, equalTo("dataschema-server"))
                 .header("ce-extserver", equalTo("ext-server-val"))
                 .body("i", equalTo(42))
-                .body("s", equalTo("abcabc"))
-                .statusCode(200);
+                .body("s", equalTo("abcabc"));
     }
 
     @ParameterizedTest
@@ -85,6 +101,7 @@ public class ExposedCloudEventTest {
                 .body(event)
                 .post("/")
                 .then()
+                .statusCode(200)
                 .body("specversion", equalTo(specversion))
                 .body("id", equalTo("double-it-id"))
                 .body("type", equalTo("double-it-type"))
@@ -92,8 +109,7 @@ public class ExposedCloudEventTest {
                 .body(dataSchemaFieldName, equalTo("dataschema-server"))
                 .body("extserver", equalTo("ext-server-val"))
                 .body("data.i", equalTo(42))
-                .body("data.s", equalTo("abcabc"))
-                .statusCode(200);
+                .body("data.s", equalTo("abcabc"));
     }
 
     static {
