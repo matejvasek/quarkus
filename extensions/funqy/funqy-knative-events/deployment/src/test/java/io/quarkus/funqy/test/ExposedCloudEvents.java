@@ -2,6 +2,7 @@ package io.quarkus.funqy.test;
 
 import java.io.Serializable;
 import java.util.Collections;
+import java.util.List;
 import java.util.Objects;
 
 import io.quarkus.funqy.Funq;
@@ -47,6 +48,21 @@ public class ExposedCloudEvents {
     @CloudEventMapping(trigger = "test-defaults", responseSource = "default-source", responseType = "default-type")
     public CloudEvent<Void> withDefaults(CloudEvent<Void> event) {
         return CloudEventBuilder.create().build();
+    }
+
+    @Funq
+    @CloudEventMapping(trigger = "test-generics")
+    public CloudEvent<Integer> sum(CloudEvent<List<TestBean>> event) {
+        Integer data = event.data().stream()
+                .map(TestBean::getI)
+                .reduce((a, b) -> a + b)
+                .orElse(0);
+
+        return CloudEventBuilder.create()
+                .specVersion(event.specVersion())
+                .id("test-sum-id")
+                .type("test-sum-type")
+                .build(data);
     }
 
     public static class TestBean implements Serializable {

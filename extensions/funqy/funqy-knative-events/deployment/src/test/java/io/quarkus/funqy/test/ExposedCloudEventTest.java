@@ -70,6 +70,19 @@ public class ExposedCloudEventTest {
                 .header("ce-source", equalTo("default-source"));
     }
 
+    @Test
+    public void testGenericInput() {
+        RestAssured.given().contentType("application/json")
+                .header("ce-id", "test-id")
+                .header("ce-specversion", "1.0")
+                .header("ce-type", "test-generics")
+                .header("ce-source", "test-source")
+                .body("[{\"i\" : 1}, {\"i\" : 2}, {\"i\" : 3}]")
+                .then()
+                .statusCode(200)
+                .body(equalTo("6"));
+    }
+
     @ParameterizedTest
     @MethodSource("provideBinaryEncodingTestArgs")
     public void testBinaryEncoding(Map<String, String> headers, String specversion, String dataSchemaHdrName) {
