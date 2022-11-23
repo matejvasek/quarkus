@@ -1,6 +1,8 @@
 package io.quarkus.funqy.test;
 
 import static io.restassured.RestAssured.given;
+import static io.restassured.RestAssured.registerParser;
+import static io.restassured.parsing.Parser.JSON;
 import static org.hamcrest.CoreMatchers.containsString;
 import static org.hamcrest.CoreMatchers.equalTo;
 
@@ -9,6 +11,7 @@ import org.junit.jupiter.api.Test;
 public abstract class GreetTestBase {
     @Test
     public void testGreet() {
+        registerParser("application/octet-stream", JSON);
         Identity identity = new Identity();
         identity.setName("Matej");
         given()

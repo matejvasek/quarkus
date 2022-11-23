@@ -6,6 +6,8 @@ import java.util.TimerTask;
 
 import javax.inject.Inject;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
+
 import io.quarkus.funqy.Funq;
 import io.smallrye.mutiny.Uni;
 
@@ -48,6 +50,20 @@ public class GreetingFunctions {
                 }
             }, Duration.ofMillis(1).toMillis());
         });
+    }
+
+    @Funq
+    public byte[] greetBinary(byte[] data) throws Throwable {
+        if (data == null) {
+            throw new IllegalArgumentException(ERR_MSG);
+        }
+        ObjectMapper objectMapper = new ObjectMapper();
+        Identity name = objectMapper.readValue(data, Identity.class);
+        String message = service.hello(name.getName());
+        Greeting greeting = new Greeting();
+        greeting.setMessage(message);
+        greeting.setName(name.getName());
+        return objectMapper.writeValueAsBytes(greeting);
     }
 
 }

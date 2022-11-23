@@ -3,6 +3,7 @@ package io.quarkus.funqy.lambda;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
+import java.net.HttpURLConnection;
 
 import org.jboss.logging.Logger;
 
@@ -48,12 +49,12 @@ public class FunqyLambdaBindingRecorder {
         FunctionConstructor.CONTAINER = bc;
         ObjectMapper objectMapper = AmazonLambdaMapperRecorder.objectMapper;
         for (FunctionInvoker invoker : FunctionRecorder.registry.invokers()) {
-            if (invoker.hasInput()) {
+            if (invoker.hasInput() && !byte[].class.equals(invoker.getInputType())) {
                 JavaType javaInputType = objectMapper.constructType(invoker.getInputType());
                 ObjectReader reader = objectMapper.readerFor(javaInputType);
                 invoker.getBindingContext().put(ObjectReader.class.getName(), reader);
             }
-            if (invoker.hasOutput()) {
+            if (invoker.hasOutput() && !byte[].class.equals(invoker.getOutputType())) {
                 JavaType javaOutputType = objectMapper.constructType(invoker.getOutputType());
                 ObjectWriter writer = objectMapper.writerFor(javaOutputType);
                 invoker.getBindingContext().put(ObjectWriter.class.getName(), writer);
@@ -77,10 +78,18 @@ public class FunqyLambdaBindingRecorder {
             invoker = FunctionRecorder.registry.invokers().iterator().next();
         }
         if (invoker.hasInput()) {
-            reader = new JacksonInputReader((ObjectReader) invoker.getBindingContext().get(ObjectReader.class.getName()));
+            if (byte[].class.equals(invoker.getInputType())) {
+                reader = new LambdaInputByteRead();
+            } else {
+                reader = new JacksonInputReader((ObjectReader) invoker.getBindingContext().get(ObjectReader.class.getName()));
+            }
         }
         if (invoker.hasOutput()) {
-            writer = new JacksonOutputWriter((ObjectWriter) invoker.getBindingContext().get(ObjectWriter.class.getName()));
+            if (byte[].class.equals(invoker.getOutputType())) {
+                writer = new LambdaOutputByteWriter();
+            } else {
+                writer = new JacksonOutputWriter((ObjectWriter) invoker.getBindingContext().get(ObjectWriter.class.getName()));
+            }
         }
 
     }
@@ -96,13 +105,21 @@ public class FunqyLambdaBindingRecorder {
     public static void handle(InputStream inputStream, OutputStream outputStream, Context context) throws IOException {
         Object input = null;
         if (invoker.hasInput()) {
-            input = reader.readValue(inputStream);
+            if (byte[].class.equals(invoker.getInputType())) {
+                input = inputStream.readAllBytes();
+            } else {
+                input = reader.readValue(inputStream);
+            }
         }
         FunqyServerResponse response = dispatch(input);
 
         Object value = response.getOutput().await().indefinitely();
         if (value != null) {
-            writer.writeValue(outputStream, value);
+            if (byte[].class.equals(invoker.getOutputType())) {
+                outputStream.write((byte[]) value);
+            } else {
+                writer.writeValue(outputStream, value);
+            }
         }
 
     }
@@ -155,6 +172,26 @@ public class FunqyLambdaBindingRecorder {
             if (requestContext.isActive()) {
                 requestContext.terminate();
             }
+        }
+    }
+
+    private static class LambdaInputByteRead implements LambdaInputReader<byte[]> {
+        @Override
+        public byte[] readValue(InputStream is) throws IOException {
+            return is.readAllBytes();
+        }
+    }
+
+    private static class LambdaOutputByteWriter implements LambdaOutputWriter {
+
+        @Override
+        public void writeValue(OutputStream os, Object obj) throws IOException {
+            os.write((byte[])obj);
+        }
+
+        @Override
+        public void writeHeaders(HttpURLConnection conn) {
+            conn.setRequestProperty("Content-Type", "application/octet-stream");
         }
     }
 
